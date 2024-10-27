@@ -3,14 +3,14 @@ import json
 
 # パラメータ設定
 time_slots = 12
-num_employees = 5
-required_employees_per_time_slot = [2, 3, 2, 2, 1, 2, 3, 2, 1, 2, 3, 2]
+num_employees = 10
+
 
 def generate_continuous_timezone():
     pattern = [0] * time_slots
     # ランダムに連続する時間の長さと開始位置を決定
     start = np.random.randint(0, time_slots - 4)  # 開始位置
-    duration = np.random.randint(3, 6)  # 連続時間を3~5に設定
+    duration = np.random.randint(3, 8)  # 連続時間を3~8に設定
     for i in range(start, min(start + duration, time_slots)):
         pattern[i] = 1
     return pattern
@@ -21,14 +21,21 @@ def generate_unavailable_timezone(shift_preference):
         if shift_preference[i]==1:
             timezone[i]=0
         else :
-            timezone[i]=int(np.random.choice([0, 1]))
+            timezone[i]=int(np.random.choice([0,0,0,1]))
     return timezone
+
+def generate_required_employees():
+    required_employees = [0] * time_slots
+    for i in range(time_slots):
+        required_employees[i]=int(np.random.randint(1, 4))
+    return required_employees
 
 
 # 連続シフトパターン、希望勤務時間帯、勤務不可時間帯の生成
 shift_patterns = [generate_continuous_timezone() for _ in range(num_employees)]
 shift_preferences = [generate_continuous_timezone() for _ in range(num_employees)]
 unavailable_slots = [generate_unavailable_timezone(shift_preferences[i]) for i in range(num_employees)]
+required_employees_per_time_slot = generate_required_employees()
 
 # 結果の出力
 shift_data = {
