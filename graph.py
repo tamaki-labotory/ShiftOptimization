@@ -15,7 +15,7 @@ def show_graph(file_path):
     }
 
     # 各データの可視化
-    fig, axs = plt.subplots(4, 1, figsize=(10, 12))
+    fig, axs = plt.subplots(3, 1, figsize=(10, 12))
     fig.tight_layout(pad=5.0)
 
     # 必要な従業員数
