@@ -1,18 +1,21 @@
+"""
+各種ソルバーを実行するメインプログラム
+"""
+
 import graph
+import glob
 import solve_program1
 
 def multiple_problem(printLog):
     cnt_f=0
     cnt_s=0
     cnt_total=0
-    for i in range(200):
-        # JSONファイルのパス
-        file_path = f"json/shift_data{i+1}.json"
-
+    files = glob.glob("json/*.json")
+    for file in files:
         # 最適化プログラム実行
         if printLog:
-            print(f"\n~~~~Results of Problem{i+1}~~~~")
-        result1,result2=solve_program1.solve(file_path,printLog)
+            print(f"\n~~~~Results of Problem{file[15:-5]}~~~~")
+        result1,result2=solve_program1.solve(file,printLog)
         if result1==1:
             cnt_f+=1
         if result2==1:

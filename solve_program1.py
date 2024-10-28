@@ -1,3 +1,9 @@
+"""
+1段階目:各シフトパターンに割り当てる人数を確定
+2段階目:従業員を各シフトパターンに割り付ける
+という順でシフトを作成するプログラム
+"""
+
 import json
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value

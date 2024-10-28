@@ -1,3 +1,9 @@
+"""
+1段階目:
+2段階目:
+という順でシフトを作成するプログラム
+"""
+
 import json
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal, value

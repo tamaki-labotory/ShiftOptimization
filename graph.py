@@ -1,3 +1,7 @@
+"""
+時間帯ごとのシフトパターンや必要人数を描画するプログラム
+"""
+
 import json
 import matplotlib.pyplot as plt
 import numpy as np

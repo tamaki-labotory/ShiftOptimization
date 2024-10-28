@@ -1,7 +1,9 @@
+"""
+テストデータを作成するプログラム
+"""
+
 import numpy as np
 import json
-
-
 
 def generate_continuous_timezone(time_slots):
     pattern = [0] * time_slots
