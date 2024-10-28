@@ -1,6 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import ListedColormap, BoundaryNorm
 
 def show_graph(file_path):
     # JSONファイルからデータを読み込む
@@ -25,6 +26,10 @@ def show_graph(file_path):
     axs[0].set_xlabel("Time Slot", fontsize=12)
     axs[0].set_ylabel("Required Number of Employees", fontsize=12)
     axs[0].grid(axis="y", linestyle="--", alpha=0.7)
+    axs[0].set_xticks(np.arange(len(np.array(data["required_employees"]))), minor=False)  # Major ticks at integers
+    axs[0].set_xticks(np.arange(-0.5, len(np.array(data["required_employees"]))), minor=True)  # Minor ticks for grid lines
+    axs[0].set_xticklabels(np.arange(1, len(np.array(data["required_employees"])) + 1))  # 整数ラベルのみ
+    axs[0].set_xlim(-0.5,len(np.array(data["required_employees"]))-0.5)
 
     # 2. シフトパターンのヒートマップ
     shift_img = axs[1].imshow(data["shift_patterns"], cmap="Blues", aspect="auto")
@@ -42,8 +47,8 @@ def show_graph(file_path):
     axs[1].grid(which="major", color="none")
 
     # 3. 従業員の希望と利用不可スロットのオーバーレイ
-    pref_img = axs[2].imshow(data["preferences"], cmap="Greens", aspect="auto", alpha=0.5)
-    unavail_img = axs[2].imshow(data["unavailable_slots"], cmap="Reds", aspect="auto", alpha=0.5)
+    pref_img = axs[2].imshow(data["preferences"], cmap=ListedColormap(["white", "Green"]), aspect="auto", alpha=0.5)
+    unavail_img = axs[2].imshow(data["unavailable_slots"], cmap=ListedColormap(["white", "Red"]), aspect="auto", alpha=0.5)
     axs[2].set_title("Employee Preferences and Unavailable Slots", fontsize=14, fontweight="bold")
     axs[2].set_xlabel("Time Slot", fontsize=12)
     axs[2].set_ylabel("Employee ID", fontsize=12)
