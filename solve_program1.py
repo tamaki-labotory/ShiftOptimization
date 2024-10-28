@@ -1,28 +1,34 @@
+"""
+1段階目:各シフトパターンに割り当てる人数を確定
+2段階目:従業員を各シフトパターンに割り付ける
+という順でシフトを作成するプログラム
+"""
+
 import json
 import numpy as np
-from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal, value
+from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value
 
-def solve(file_path):
+def solve(file_path,printLog):
 
     # JSONファイルからデータを読み込む
     with open(file_path, "r") as f:
         shift_data = json.load(f)
 
-    # 読み込んだデータの表示
-    print("Required Employees per Time Slot:")
-    print(shift_data["required_employees"])
+    # # 読み込んだデータの表示
+    # print("Required Employees per Time Slot:")
+    # print(shift_data["required_employees"])
 
-    print("\nShift Patterns:")
-    for i, pattern in enumerate(shift_data["shift_patterns"]):
-        print(f"Pattern {i+1}: {pattern}")
+    # print("\nShift Patterns:")
+    # for i, pattern in enumerate(shift_data["shift_patterns"]):
+    #     print(f"Pattern {i+1}: {pattern}")
 
-    print("\nPreferences:")
-    for i, preference in enumerate(shift_data["preferences"]):
-        print(f"Employee {i+1}: {preference}")
+    # print("\nPreferences:")
+    # for i, preference in enumerate(shift_data["preferences"]):
+    #     print(f"Employee {i+1}: {preference}")
 
-    print("\nUnavailable Slots:")
-    for i, unavailable in enumerate(shift_data["unavailable_slots"]):
-        print(f"Employee {i+1}: {unavailable}")
+    # print("\nUnavailable Slots:")
+    # for i, unavailable in enumerate(shift_data["unavailable_slots"]):
+    #     print(f"Employee {i+1}: {unavailable}")
 
     # 定数の設定
     n_S = np.array(shift_data["shift_patterns"]).shape[0]
@@ -46,7 +52,7 @@ def solve(file_path):
     problem2 = LpProblem("Shift_Assignment", LpMaximize)
 
     # 変数の設定
-    x = LpVariable.dicts("x", range(n_L), lowBound=0, cat='Integer')  # シフトパターンに割り当てる人数
+    x = LpVariable.dicts("x", range(n_S), lowBound=0, cat='Integer')  # シフトパターンに割り当てる人数
     y = LpVariable.dicts("y", (range(n_L), range(n_S)), cat='Binary')  # 従業員がシフトパターンに割り当てられているか
 
 
@@ -61,8 +67,7 @@ def solve(file_path):
         problem1 += lpSum([lpSum([w[s][t] * x[s] for s in range(n_S)])]) >= n_D[t]  # 各時間帯の必要人数
 
     # 問題の解決
-    print(problem1)
-    problem1.solve()
+    problem1.solve(PULP_CBC_CMD(msg=False))
 
 
     #################２段目#################
@@ -82,24 +87,26 @@ def solve(file_path):
         problem2 += lpSum([y[l][s] for s in range(n_S)]) <= 1  # 割り付けるシフトパターンは一個まで
 
     # 問題の解決
-    problem2.solve()
+    problem2.solve(PULP_CBC_CMD(msg=False))
 
 
     # 結果の表示
-    if problem1.status == 1:
-        print("１階目の最適解が見つかりました。")
-        print("超過人数:", value(problem1.objective))
-        print("各シフトパターンの割り当て人数:")
-        for s in range(n_S):
-            print(f"シフトパターン {s+1}: {value(x[s])}")
-    else:
-        print("１階目の最適解は見つかりませんでした。")
+    if printLog:
+        if problem1.status == 1:
+            print("超過人数:", value(problem1.objective))
+            print("各シフトパターンの割り当て人数:")
+            for s in range(n_S):
+                print(f"シフトパターン {s+1}: {value(x[s])}")
+        else:
+            print("The optimal solution for the first step was not found.")
 
-    if problem2.status == 1:
-        print("２階目の従業員の割り当て:")
-        for l in range(n_L):
-            assigned_shifts = [s + 1 for s in range(n_S) if value(y[l][s]) == 1]
-            print(f"従業員 {l+1}: シフト {assigned_shifts}")
-        print("従業員満足度:",value(problem2.objective))
-    else:
-        print("２階目の最適解は見つかりませんでした。")
+        if problem2.status == 1:
+            print("２階目の従業員の割り当て:")
+            for l in range(n_L):
+                assigned_shifts = [s + 1 for s in range(n_S) if value(y[l][s]) == 1]
+                print(f"従業員 {l+1}: シフト {assigned_shifts}")
+            print("従業員満足度:",value(problem2.objective))
+        else:
+            print("The optimal solution for the second step was not found.")
+
+    return problem1.status,problem2.status
