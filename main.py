@@ -8,4 +8,4 @@ from matsu import mediator
 if __name__ == "__main__":
 
     #松村用実行関数
-    mediator.mediator("s","./json/shift_data85.json",True)
+    mediator.mediator("m","./json/shift_data85.json",False)

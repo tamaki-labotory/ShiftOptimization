@@ -21,14 +21,16 @@ def multiple_problem(printLog):
             cnt1_s+=1
         if result1==1 and result2==1:
             cnt1_total+=1
-
-        print("~~~~~~~~~~~~~~~~~~~~~~")
+            
+        if printLog:
+            print("~~~~~~~~~~~~~~~~~~~~~~")
         result2=solve_program2.solve(file,printLog)
         if result2==1:
             cnt2_s+=1
             cnt2_total+=1
 
-        print("~~~~~~~~~~~~~~~~~~~~~~")
+        if printLog:
+            print("~~~~~~~~~~~~~~~~~~~~~~")
         result1,result2=solve_program3.solve(file,printLog)
         if result1==1:
             cnt3_f+=1
