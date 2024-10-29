@@ -3,7 +3,6 @@ from matsu import solve_program2
 from matsu import solve_program3
 from matsu import solve_program4
 from matsu import solve_program5
-from matsu import solve_program6
 import numpy as np
 import graph
 import glob
@@ -74,7 +73,9 @@ def multiple_problem(printLog):
     print(f'Number of correct answers in the second stage:{cnt3_s}')
     print(f'Total number of correct answers:{cnt3_total}')
 
-    graph.show_scatter(over_labors,fulfill_preferences)
+    #　条件可視化
+    sdv=graph.ShiftDataVisualizer()
+    sdv.show_scatter(over_labors,fulfill_preferences)
     
 
 
@@ -86,7 +87,8 @@ def single_problem(file_path,printLog):
     solve_program3.solve(file_path,printLog)
 
     #　条件可視化
-    graph.show_graph(file_path)
+    sdv=graph.ShiftDataVisualizer(file_path)
+    sdv.show_graph()
     
 
 def mediator(s_or_m,file_path,printLog):
