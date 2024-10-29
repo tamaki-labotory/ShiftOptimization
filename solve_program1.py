@@ -94,17 +94,23 @@ def solve(file_path,printLog):
     if printLog:
         if problem1.status == 1:
             print("超過人数:", value(problem1.objective))
-            print("各シフトパターンの割り当て人数:")
-            for s in range(n_S):
-                print(f"シフトパターン {s+1}: {value(x[s])}")
+            print(f"各シフトパターンの割り当て人数:{[int(value(x[v])) for v in x]}")
         else:
             print("The optimal solution for the first step was not found.")
 
         if problem2.status == 1:
-            print("２階目の従業員の割り当て:")
+            assigned_shifts = []
             for l in range(n_L):
-                assigned_shifts = [s + 1 for s in range(n_S) if value(y[l][s]) == 1]
-                print(f"従業員 {l+1}: シフト {assigned_shifts}")
+                unallocated=True
+                for s in range(n_S):
+                    if value(y[l][s]) == 1 :
+                        assigned_shifts.append(s+1)
+                        unallocated=False
+                        break
+                if unallocated:
+                    assigned_shifts.append(-1)
+                    
+            print(f"２階目の従業員の割り当て:{assigned_shifts}")
             print("従業員満足度:",value(problem2.objective))
         else:
             print("The optimal solution for the second step was not found.")
