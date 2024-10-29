@@ -76,3 +76,20 @@ def show_graph(file_path):
     axs[2].legend(handles=legend_elements, loc="upper right", fontsize=10)
 
     plt.show()
+
+
+def show_scatter(over_labors,fulfill_preferences):
+    # 散布図作成
+    plt.figure(figsize=(10, 6))
+
+    # 各行のデータをプロット
+    for idx in range(len(over_labors)):
+        plt.scatter(over_labors[idx], fulfill_preferences[idx], label=f'Row {idx+1}', alpha=0.7)
+
+    # グラフの設定
+    plt.title('Scatter Plot of Over Labors vs Fulfill Preferences (Each Row Grouped by Color)')
+    plt.xlabel('Over Labors Values')
+    plt.ylabel('Fulfill Preferences Values')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
