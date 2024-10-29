@@ -1,5 +1,6 @@
 """
 1段階目:各シフトパターンに割り当てる人数を確定
+    従業員の希望を考慮
 2段階目:従業員を各シフトパターンに割り付ける
 という順でシフトを作成するプログラム
 """
@@ -55,7 +56,9 @@ def solve(file_path,printLog):
     x = LpVariable.dicts("x", range(n_S), lowBound=0, cat='Integer')  # シフトパターンに割り当てる人数
     y = LpVariable.dicts("y", (range(n_L), range(n_S)), cat='Binary')  # 従業員がシフトパターンに割り当てられているか
 
-
+    #返り値
+    #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時]
+    ret=[0]*4
 
     #################１段目#################
 
@@ -82,7 +85,7 @@ def solve(file_path,printLog):
 
     # 問題の解決
     problem1.solve(PULP_CBC_CMD(msg=False))
-
+    ret[0]=problem1.status
 
     #################２段目#################
 
@@ -102,12 +105,14 @@ def solve(file_path,printLog):
 
     # 問題の解決
     problem2.solve(PULP_CBC_CMD(msg=False))
-
+    ret[1]=problem2.status
+    ret[2]=sum(sum(w[s][t]*value(x[s]) for s in range(n_S))-n_D[t] for t in range(n_T))
+    ret[3]=value(problem2.objective)/n_L
 
     # 結果の表示
     if printLog:
         if problem1.status == 1:
-            print(f"超過人数: {sum(sum(w[s][t]*value(x[s]) for s in range(n_S))-n_D[t] for t in range(n_T))}")
+            print(f"超過人数: {ret[2]}")
             print(f"各シフトパターンの割り当て人数:{[int(value(x[v])) for v in x]}")
         else:
             print("The optimal solution for the first step was not found.")
@@ -125,8 +130,8 @@ def solve(file_path,printLog):
                     assigned_shifts.append(-1)
                     
             print(f"２階目の従業員の割り当て:{assigned_shifts}")
-            print("従業員満足度:",value(problem2.objective))
+            print("従業員満足度:",ret[3])
         else:
             print("The optimal solution for the second step was not found.")
 
-    return problem1.status,problem2.status
+    return ret

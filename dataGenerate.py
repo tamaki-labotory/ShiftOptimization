@@ -10,8 +10,8 @@ def generate_continuous_timezone(time_slots):
     # ランダムに連続する時間の長さと開始位置を決定
     start = np.random.randint(0, time_slots - 4)  # 開始位置
     duration = np.random.randint(3, 8)  # 連続時間を3~8に設定
-    for i in range(start, min(start + duration, time_slots)):
-        pattern[i] = 1
+    for i in range(start, start + duration):
+        pattern[(i)%time_slots] = 1
     return pattern
 
 
@@ -30,8 +30,8 @@ def generate_shift_pattern(time_slots,num_shift_pattern):
     shift_patterns=[]
     for sd,b in start_and_duration.items():
         pattern = [0] * time_slots
-        for i in range(sd[0], min(sd[0] + sd[1] , time_slots)):
-            pattern[i] = 1
+        for i in range(sd[0], sd[0] + sd[1] ):
+            pattern[(i)%time_slots] = 1
         shift_patterns.append(pattern)
     
     checkFlag=True
@@ -66,7 +66,7 @@ def generate_required_employees(time_slots):
 def create_new_problem(file_path1,file_path2):
     # パラメータ設定
     time_slots = 12
-    num_employees = np.random.randint(5, 20)
+    num_employees = np.random.randint(15, 20)
     num_shift_pattern = np.random.randint(6, 10)
 
     # 連続シフトパターン、希望勤務時間帯、勤務不可時間帯の生成

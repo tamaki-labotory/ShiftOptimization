@@ -88,7 +88,13 @@ def solve(file_path,printLog):
     for s in range(n_S):
         delta[s]=sum(max(0,gamma[l][s]) for l in range(n_L))/n_L
 
+    #残りの必要人数
     remain=[v for v in n_D]
+
+    #返り値
+    #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時]
+    ret=[0]*4
+
     while 1:
         objective_function=[beta[i]+delta[i] for i in range(n_S)]
         best_value=max(objective_function)
@@ -114,18 +120,25 @@ def solve(file_path,printLog):
     
         if all(b <= 0 for b in beta):
             break
+    
+
+    over_labors=0
+    under_labors=0
+    for t in range(n_T):
+        tmp=sum(w[s][t]*x[s] for s in range(n_S))-n_D[t]
+        if tmp>0:
+            over_labors+=tmp
+        if tmp<0:
+            under_labors+=tmp
+    
+    if under_labors==0:
+            ret[0]=1
+    ret[2]=over_labors
     if printLog:
-        over_labors=0
-        under_labors=0
-        for t in range(n_T):
-            tmp=sum(w[s][t]*x[s] for s in range(n_S))-n_D[t]
-            if tmp>0:
-                over_labors+=tmp
-            if tmp<0:
-                under_labors+=tmp
         print(f"超過人数：{over_labors}")
         print(f"不足人数：{under_labors}")
         print(f"シフトパターンごとの割り付け：{x}")
+
 
 
 
@@ -147,7 +160,8 @@ def solve(file_path,printLog):
 
     # 問題の解決
     problem2.solve(PULP_CBC_CMD(msg=False))
-
+    ret[1]=problem2.status
+    ret[3]=value(problem2.objective)/n_L
 
     # 結果の表示
     if printLog:
@@ -167,4 +181,4 @@ def solve(file_path,printLog):
         else:
             print("The optimal solution for the second step was not found.")
 
-    return problem2.status
+    return ret

@@ -1,6 +1,10 @@
 from matsu import solve_program1
 from matsu import solve_program2
 from matsu import solve_program3
+from matsu import solve_program4
+from matsu import solve_program5
+from matsu import solve_program6
+import numpy as np
 import graph
 import glob
 
@@ -9,35 +13,55 @@ def multiple_problem(printLog):
     cnt2_s=0
     cnt3_f=cnt3_s=0
     cnt1_total=cnt2_total=cnt3_total=0
+    over_labors=[[],[],[]]
+    fulfill_preferences=[[],[],[]]
     files = glob.glob("./json/*.json")
     for file in files:
+        ret=[]
+        
         # 最適化プログラム実行
+        append_flag=True
         if printLog:
             print(f"\n~~~~Results of Problem{file[15:-5]}~~~~")
-        result1,result2=solve_program1.solve(file,printLog)
-        if result1==1:
+        ret.append(solve_program4.solve(file,printLog))
+        if ret[-1][0]==1:
             cnt1_f+=1
-        if result2==1:
+        if ret[-1][1]==1:
             cnt1_s+=1
-        if result1==1 and result2==1:
+        if ret[-1][0]==1 and ret[-1][1]==1:
             cnt1_total+=1
-            
-        if printLog:
-            print("~~~~~~~~~~~~~~~~~~~~~~")
-        result2=solve_program2.solve(file,printLog)
-        if result2==1:
-            cnt2_s+=1
-            cnt2_total+=1
+        else :
+            append_flag=False
 
         if printLog:
             print("~~~~~~~~~~~~~~~~~~~~~~")
-        result1,result2=solve_program3.solve(file,printLog)
-        if result1==1:
+        #2個目のプログラム結果
+        ret.append(solve_program5.solve(file,printLog))
+        if ret[-1][1]==1:
+            cnt2_s+=1
+            cnt2_total+=1
+        else :
+            append_flag=False
+
+        if printLog:
+            print("~~~~~~~~~~~~~~~~~~~~~~")
+        #3個目のプログラム結果
+        ret.append(solve_program6.solve(file,printLog))
+        if ret[-1][0]==1:
             cnt3_f+=1
-        if result2==1:
+        if ret[-1][1]==1:
             cnt3_s+=1
-        if result1==1 and result2==1:
+        if ret[-1][0]==1 and ret[-1][1]==1:
             cnt3_total+=1
+        else :
+            append_flag=False
+
+        if append_flag is True:
+            for i in range(3):
+                over_labors[i].append(ret[i][2])
+                fulfill_preferences[i].append(ret[i][3])
+    print("plot data:",np.array(over_labors).shape[1])
+
 
     print(f'\nNumber of correct answers in the first stage:{cnt1_f}')
     print(f'Number of correct answers in the second stage:{cnt1_s}')
@@ -49,6 +73,9 @@ def multiple_problem(printLog):
     print(f'Number of correct answers in the first stage:{cnt3_f}')
     print(f'Number of correct answers in the second stage:{cnt3_s}')
     print(f'Total number of correct answers:{cnt3_total}')
+
+    graph.show_scatter(over_labors,fulfill_preferences)
+    
 
 
 def single_problem(file_path,printLog):
