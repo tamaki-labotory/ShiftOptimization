@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 
+
 class ShiftDataVisualizer:
     def __init__(self,file_path=None,data=None):
         if file_path!=None:
@@ -29,7 +30,6 @@ class ShiftDataVisualizer:
         }
       
     def show_graph(self):
-        print("ok")
         plt.style.use("ggplot")
 
         fig, axs = plt.subplots(3, 1, figsize=(10, 14))
@@ -89,7 +89,7 @@ class ShiftDataVisualizer:
         plt.show()
 
 
-    def show_scatter(over_labors,fulfill_preferences):
+    def show_scatter(self,over_labors,fulfill_preferences):
         # 散布図作成
         plt.figure(figsize=(10, 6))
 
@@ -102,5 +102,27 @@ class ShiftDataVisualizer:
         plt.xlabel('Over Labors Values')
         plt.ylabel('Fulfill Preferences Values')
         plt.legend()
+        plt.grid(True)
+        plt.show()
+    
+
+    def show_scatter_using_heat_map(self,data1,data2,xlabel="Objective1",ylabel="Objective2",title="Plot of each data value in the objective functions 1 and 2",colorbar_label=""):
+        # 値の大きさに応じたカラー設定
+        data_sum = np.array(data1) + np.array(data2)
+
+        plt.figure(figsize=(10, 6))
+        
+        # 各行のデータをプロット（合計値をカラーマップで指定）
+        plt.scatter(data1, data2, c=data_sum, cmap='plasma', alpha=0.7)
+        plt.scatter(47/70,-26/50,marker='x')
+
+        # カラーバーを追加して色の基準を表示
+        plt.colorbar(label=colorbar_label)
+
+
+        # グラフの設定
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
         plt.grid(True)
         plt.show()
