@@ -7,6 +7,7 @@ import numpy as np
 import graph
 import glob
 
+
 def multiple_problem(printLog):
     cnt1_f=cnt1_s=0
     cnt2_s=0
@@ -14,14 +15,14 @@ def multiple_problem(printLog):
     cnt1_total=cnt2_total=cnt3_total=0
     over_labors=[[],[],[]]
     fulfill_preferences=[[],[],[]]
-    files = glob.glob("./json/*.json")
+    files = glob.glob("/Users/matsumura/Desktop/修論/solver/json/*.json")
     for file in files:
         ret=[]
         
         # 最適化プログラム実行
         append_flag=True
         if printLog:
-            print(f"\n~~~~Results of Problem{file[15:-5]}~~~~")
+            print(f"\n~~~~Results of Problem{file[50:-5]}~~~~")
         ret.append(solve_program4.solve(file,printLog))
         if ret[-1][0]==1:
             cnt1_f+=1
@@ -45,7 +46,7 @@ def multiple_problem(printLog):
         if printLog:
             print("~~~~~~~~~~~~~~~~~~~~~~")
         #3個目のプログラム結果
-        ret.append(solve_program6.solve(file,printLog))
+        ret.append(solve_program3.solve(file,printLog))
         if ret[-1][0]==1:
             cnt3_f+=1
         if ret[-1][1]==1:
