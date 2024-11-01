@@ -335,7 +335,8 @@ class GeneticAlgorithm:
 
         #得られた解の表示
         sdv=ShiftDataVisualizer()
-        sdv.show_scatter_using_heat_map(show_data_num_of_fitness1,show_data_num_of_fitness2,"Shift Preference Fulfillment Rate(Objective1)","Shift Vacancy Rate(Objective2)","","Objective1+Objective2")
+        show_data=[[show_data_num_of_fitness1[i],show_data_num_of_fitness2[i]] for i in range(len(show_data_num_of_fitness1))] 
+        sdv.show_scatter_using_heat_map(show_data,"Shift Preference Fulfillment Rate(Objective1)","Shift Vacancy Rate(Objective2)","","Objective1+Objective2")
         
         return best_chromosome
 

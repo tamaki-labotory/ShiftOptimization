@@ -106,15 +106,17 @@ class ShiftDataVisualizer:
         plt.show()
     
 
-    def show_scatter_using_heat_map(self,data1,data2,xlabel="Objective1",ylabel="Objective2",title="Plot of each data value in the objective functions 1 and 2",colorbar_label=""):
+    def show_scatter_using_heat_map(self,data,points=[],xlabel="Objective1",ylabel="Objective2",title="Plot of each data value in the objective functions 1 and 2",colorbar_label=""):
         # 値の大きさに応じたカラー設定
-        data_sum = np.array(data1) + np.array(data2)
+        data_sum = np.array(data[0]) + np.array(data[1])
 
         plt.figure(figsize=(10, 6))
         
         # 各行のデータをプロット（合計値をカラーマップで指定）
-        plt.scatter(data1, data2, c=data_sum, cmap='plasma', alpha=0.7)
-        plt.scatter(47/70,-26/50,marker='x')
+        plt.scatter(data[0], data[1], c=data_sum, cmap='plasma', alpha=0.7)
+
+        for point in points:
+            plt.scatter(point[0],point[1],marker='x')
 
         # カラーバーを追加して色の基準を表示
         plt.colorbar(label=colorbar_label)
