@@ -6,7 +6,7 @@ from heapq import nlargest
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from solver.graph import ShiftDataVisualizer
+from graph import ShiftDataVisualizer
 from matplotlib import pyplot as plt
 
 class Chromosome(ABC):
@@ -335,8 +335,9 @@ class GeneticAlgorithm:
 
         #得られた解の表示
         sdv=ShiftDataVisualizer()
+        points=[[47,-26],[53,-35]]
         show_data=[[show_data_num_of_fitness1[i],show_data_num_of_fitness2[i]] for i in range(len(show_data_num_of_fitness1))] 
-        sdv.show_scatter_using_heat_map(show_data,"Shift Preference Fulfillment Rate(Objective1)","Shift Vacancy Rate(Objective2)","","Objective1+Objective2")
+        sdv.show_scatter_using_heat_map(show_data,points,"Shift Preference Fulfillment Rate(Objective1)","Shift Vacancy Rate(Objective2)","","Objective1+Objective2")
         
         return best_chromosome
 

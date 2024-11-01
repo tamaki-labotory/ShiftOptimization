@@ -23,7 +23,7 @@ def multiple_problem(printLog):
         append_flag=True
         if printLog:
             print(f"\n~~~~Results of Problem{file[50:-5]}~~~~")
-        ret.append(solve_program4.solve(file,printLog))
+        ret.append(solve_program1.solve(file,printLog))
         if ret[-1][0]==1:
             cnt1_f+=1
         if ret[-1][1]==1:
@@ -36,7 +36,7 @@ def multiple_problem(printLog):
         if printLog:
             print("~~~~~~~~~~~~~~~~~~~~~~")
         #2個目のプログラム結果
-        ret.append(solve_program5.solve(file,printLog))
+        ret.append(solve_program2.solve(file,printLog))
         if ret[-1][1]==1:
             cnt2_s+=1
             cnt2_total+=1

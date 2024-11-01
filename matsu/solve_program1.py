@@ -116,7 +116,7 @@ def solve(file_path,printLog):
                     assigned_shifts.append(-1)
                     
             print(f"２階目の従業員の割り当て:{assigned_shifts}")
-            print("従業員満足度:",value(problem2.objective))
+            print("従業員満足度:",ret[3])
         else:
             print("The optimal solution for the second step was not found.")
 
