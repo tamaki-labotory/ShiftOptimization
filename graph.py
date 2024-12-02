@@ -88,39 +88,138 @@ class ShiftDataVisualizer:
 
         plt.show()
 
-    def show_working_time(self,assingned_shift):
+    def show_assingn_state(self, assigned_shifts):
+        plt.style.use("ggplot")  # グラフのスタイルを設定
 
-        plt.style.use("ggplot")
+        fig, ax = plt.subplots(figsize=(12, 8))  # グラフのサイズを設定
 
-        fig, axs = plt.subplots(1, 1, figsize=(10, 14))
-        fig.tight_layout(pad=6.0)
+        time_slots = len(self.data["required_employees"])
+        num_shifts = len(self.data["shift_patterns"])
 
-         # 4. 実際の割り当てられたシフトパターンのオーバーレイ
-        shift_assignment_img = axs[0].imshow(assingned_shift, cmap=ListedColormap(["white", "blue"]), aspect="auto", alpha=0.5)
-        axs[0].set_title("Actual Assigned Shifts on Employee Availability", fontsize=14, fontweight="bold")
-        axs[0].set_xlabel("Time Slot", fontsize=12)
-        axs[0].set_ylabel("Employee ID", fontsize=12)
+        # 割り当てられたシフトをマトリックス形式に変換
+        assigned_matrix = np.zeros((time_slots, num_shifts))
+        for i, shift_pattern in enumerate(self.data["shift_patterns"]):
+            if assigned_shifts[i] > 0:
+                assigned_matrix[:, i] = np.array(shift_pattern) * assigned_shifts[i]
 
-        # グリッドやラベル設定
-        axs[0].set_xticks(np.arange(np.array(assingned_shift).shape[1]), minor=False)
-        axs[0].set_yticks(np.arange(np.array(assingned_shift).shape[0]), minor=False)
-        axs[0].set_xticks(np.arange(-0.5, np.array(assingned_shift).shape[1]), minor=True)
-        axs[0].set_yticks(np.arange(-0.5, np.array(assingned_shift).shape[0]), minor=True)
-        axs[0].set_xticklabels(np.arange(1, np.array(assingned_shift).shape[1] + 1))
-        axs[0].set_yticklabels(np.arange(1, np.array(assingned_shift).shape[0] + 1))
-        axs[0].grid(which="both", color="gray", linestyle="--", linewidth=0.5)
-        axs[0].grid(which="major", color="none")
-
-        # レジェンドの作成
-        from matplotlib.lines import Line2D
-        legend_elements = [
-            Line2D([0], [0], color="blue", lw=4, label="Assigned Shifts"),
-            Line2D([0], [0], color="green", lw=4, label="Preferences"),
-            Line2D([0], [0], color="red", lw=4, label="Unavailable Slots")
+        pastel_colors = [
+            "#FFB6C1",  # Light Pink
+            "#FFD700",  # Gold
+            "#87CEEB",  # Sky Blue
+            "#98FB98",  # Pale Green
+            "#FF69B4",  # Hot Pink
+            "#FFA07A",  # Light Salmon
+            "#DDA0DD",  # Plum
+            "#E6E6FA",  # Lavender
+            "#F5DEB3",  # Wheat
+            "#FFC0CB",  # Pink
         ]
-        axs[0].legend(handles=legend_elements, loc="upper right", fontsize=10)
 
+        # 各シフトをスタックして描画
+        bottom = np.zeros(time_slots)
+        for i in range(num_shifts):
+            if assigned_shifts[i] > 0:
+                ax.bar(
+                    range(time_slots),
+                    assigned_matrix[:, i],
+                    bottom=bottom,
+                    color=pastel_colors[i % len(pastel_colors)],  # パステル系の色を適用
+                    edgecolor="black",
+                    linewidth=0.8,
+                    label=f"Shift {i + 1} (Assigned: {assigned_shifts[i]})",
+                )
+                bottom += assigned_matrix[:, i]
+
+        # 必要人数を超えた部分を計算
+        total_assigned = np.sum(assigned_matrix, axis=1)
+        over_assignment = total_assigned - self.data["required_employees"]
+        over_assignment[over_assignment < 0] = 0  # 超過していない部分はゼロにする
+
+        # 必要人数ラインの描画
+        ax.plot(
+            range(time_slots),
+            self.data["required_employees"],
+            "r-",
+            linewidth=2,
+            marker="o",
+            markersize=6,
+            label="Required Employees",
+        )
+
+        # 必要人数を超えた部分にハッチングを追加
+        ax.bar(
+            range(time_slots),
+            over_assignment,
+            bottom=self.data["required_employees"],
+            color="none",  # 塗りつぶしなし
+            edgecolor="black",
+            hatch="///",  # ハッチングパターン
+            linewidth=1.0,
+            label="Over Assignment (Hatched)",
+        )
+
+        # y軸の上方向に余裕を持たせる
+        max_y = max(np.max(total_assigned), np.max(self.data["required_employees"]))
+        ax.set_ylim(0, max_y * 1.2)  # 最大値の20%余裕を追加
+
+        # グラフの詳細設定
+        ax.set_title("Assigned Shifts and Over Assignment", fontsize=16, fontweight="bold")
+        ax.set_xlabel("Time Slot", fontsize=12)
+        ax.set_ylabel("Number of Employees", fontsize=12)
+        ax.set_xticks(range(time_slots))
+        ax.set_xticklabels(range(1, time_slots + 1))
+        ax.legend(fontsize=10)
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+        plt.tight_layout()
         plt.show()
+
+
+    # def show_assingn_state(self,assingned_shift):
+
+    #     plt.style.use("ggplot")
+
+    #     fig, axs = plt.subplots(1, 1, figsize=(10, 14))
+    #     fig.tight_layout(pad=6.0)
+
+    #     assingn_state=[]
+    #     for i in range(len(self.data["shift_patterns"])):
+    #         if assingned_shift[i]<=0:continue
+    #         tmp=[]
+    #         for time in self.data["shift_patterns"][i]:
+    #             if time==1:tmp.append(assingned_shift[i])
+    #             else :tmp.append(0)
+    #         assingn_state.append(tmp)
+
+    #     print(f"a_s:{assingn_state}")
+
+        #  # 4. 実際の割り当てられたシフトパターンのオーバーレイ
+        # shift_assignment_img = axs[0].imshow(assingned_shift, cmap=ListedColormap(["white", "blue"]), aspect="auto", alpha=0.5)
+
+        # axs[0].set_title("Actual Assigned Shifts on Employee Availability", fontsize=14, fontweight="bold")
+        # axs[0].set_xlabel("Time Slot", fontsize=12)
+        # axs[0].set_ylabel("Employee ID", fontsize=12)
+
+        # # グリッドやラベル設定
+        # axs[0].set_xticks(np.arange(np.array(assingned_shift).shape[1]), minor=False)
+        # axs[0].set_yticks(np.arange(np.array(assingned_shift).shape[0]), minor=False)
+        # axs[0].set_xticks(np.arange(-0.5, np.array(assingned_shift).shape[1]), minor=True)
+        # axs[0].set_yticks(np.arange(-0.5, np.array(assingned_shift).shape[0]), minor=True)
+        # axs[0].set_xticklabels(np.arange(1, np.array(assingned_shift).shape[1] + 1))
+        # axs[0].set_yticklabels(np.arange(1, np.array(assingned_shift).shape[0] + 1))
+        # axs[0].grid(which="both", color="gray", linestyle="--", linewidth=0.5)
+        # axs[0].grid(which="major", color="none")
+
+        # # レジェンドの作成
+        # from matplotlib.lines import Line2D
+        # legend_elements = [
+        #     Line2D([0], [0], color="blue", lw=4, label="Assigned Shifts"),
+        #     Line2D([0], [0], color="green", lw=4, label="Preferences"),
+        #     Line2D([0], [0], color="red", lw=4, label="Unavailable Slots")
+        # ]
+        # axs[0].legend(handles=legend_elements, loc="upper right", fontsize=10)
+
+        # plt.show()
 
     def show_scatter(self,over_labors,fulfill_preferences):
         # 散布図作成
@@ -162,3 +261,5 @@ class ShiftDataVisualizer:
         plt.ylabel(ylabel)
         plt.grid(True)
         plt.show()
+
+

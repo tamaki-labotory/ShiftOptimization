@@ -85,11 +85,12 @@ def single_problem(file_path,printLog):
     print("~~~~~~~~~~~~~~~~~~~~~~")
     solve_program2.solve(file_path,printLog)
     print("~~~~~~~~~~~~~~~~~~~~~~")
-    solve_program3.solve(file_path,printLog)
+    ret=solve_program3.solve(file_path,printLog)
 
     #　条件可視化
     sdv=graph.ShiftDataVisualizer(file_path)
-    sdv.show_graph()
+    # sdv.show_graph()
+    sdv.show_assingn_state(ret[4])
     
 
 def mediator(s_or_m,file_path,printLog):

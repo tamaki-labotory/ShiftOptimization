@@ -109,28 +109,31 @@ def solve(file_path,printLog):
     ret[2]=sum(sum(w[s][t]*value(x[s]) for s in range(n_S))-n_D[t] for t in range(n_T))
     ret[3]=value(problem2.objective)/n_L
 
+    assigned_shifts = []
+    for l in range(n_L):
+        unallocated=True
+        for s in range(n_S):
+            if value(y[l][s]) == 1 :
+                assigned_shifts.append(s+1)
+                unallocated=False
+                break
+        if unallocated:
+            assigned_shifts.append(-1)
+    ret.append([int(value(x[v])) for v in x])
+    ret.append(assigned_shifts)
+
     # 結果の表示
     if printLog:
         if problem1.status == 1:
-            print(f"超過人数: {ret[2]}")
+            print("超過人数:", value(problem1.objective))
             print(f"各シフトパターンの割り当て人数:{[int(value(x[v])) for v in x]}")
         else:
             print("The optimal solution for the first step was not found.")
 
         if problem2.status == 1:
-            assigned_shifts = []
-            for l in range(n_L):
-                unallocated=True
-                for s in range(n_S):
-                    if value(y[l][s]) == 1 :
-                        assigned_shifts.append(s+1)
-                        unallocated=False
-                        break
-                if unallocated:
-                    assigned_shifts.append(-1)
-                    
             print(f"２階目の従業員の割り当て:{assigned_shifts}")
             print("従業員満足度:",ret[3])
+            # print(f"x:{x},y:{y}")
         else:
             print("The optimal solution for the second step was not found.")
 
