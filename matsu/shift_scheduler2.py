@@ -11,7 +11,6 @@ from mojule.shift_scheduler import ShiftScheduler
 class ShiftScheduler2(ShiftScheduler):
     def solve(self):
         # 問題の定義
-        # problem1 = LpProblem("Shift_Assignment", LpMinimize)
         problem2 = LpProblem("Shift_Assignment", LpMaximize)
 
         # 変数の設定
@@ -50,9 +49,6 @@ class ShiftScheduler2(ShiftScheduler):
         #残りの必要人数
         remain=[v for v in self.n_D]
 
-        #返り値
-        #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時]
-        ret=[0]*4
 
         while 1:
             objective_function=[beta[i]+delta[i] for i in range(self.n_S)]
@@ -90,8 +86,8 @@ class ShiftScheduler2(ShiftScheduler):
                 under_labors+=tmp
         
         if under_labors==0:
-                ret[0]=1
-        ret[2]=over_labors
+                self.ret[0]=1
+        self.ret[2]=over_labors
 
 
         # #################２段目#################
@@ -111,5 +107,5 @@ class ShiftScheduler2(ShiftScheduler):
 
         # 問題の解決
         problem2.solve(PULP_CBC_CMD(msg=False))
-        ret[1]=problem2.status
-        ret[3]=value(problem2.objective)/self.n_L
+        self.ret[1]=problem2.status
+        self.ret[3]=value(problem2.objective)/self.n_L
