@@ -1,11 +1,59 @@
 """
 時間帯ごとのシフトパターンや必要人数を描画するプログラム
 """
+import sys
 
+# passの設定 (pip showで出てきた、LocationのPASSを以下に設定)
+sys.path.append('/Users/hymac/mypy/lib/python3.12/site-packages')
 import json
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap, BoundaryNorm
+
+def show_labor(file_path):
+    # JSONファイルからデータを読み込む
+    with open(file_path, "r") as f:
+        shift_data = json.load(f)
+
+    data = {
+        "required_employees": shift_data["required_employees"],
+        "shift_patterns": shift_data["shift_patterns"],
+        "preferences": shift_data["preferences"],
+        "unavailable_slots": shift_data["unavailable_slots"]
+    }
+
+    plt.style.use("ggplot")
+
+    fig, axs = plt.subplots(1, 1, figsize=(10, 14))
+    fig.tight_layout(pad=6.0)
+
+    # 3. 従業員の希望と利用不可スロットのオーバーレイ
+    pref_img = axs.imshow(data["preferences"], cmap=ListedColormap(["white", "Green"]), aspect="auto", alpha=0.5)
+    unavail_img = axs.imshow(data["unavailable_slots"], cmap=ListedColormap(["white", "Red"]), aspect="auto", alpha=0.5)
+    axs.set_title("Employee Preferences and Unavailable Slots", fontsize=14, fontweight="bold")
+    axs.set_xlabel("Time Slot", fontsize=12)
+    axs.set_ylabel("Employee ID", fontsize=12)
+   
+    axs.set_xticks(np.arange(np.array(data["unavailable_slots"]).shape[1]), minor=False)  # Major ticks at integers
+    axs.set_yticks(np.arange(np.array(data["unavailable_slots"]).shape[0]), minor=False)
+    axs.set_xticks(np.arange(-0.5, np.array(data["unavailable_slots"]).shape[1]), minor=True)  # Minor ticks for grid lines
+    axs.set_yticks(np.arange(-0.5, np.array(data["unavailable_slots"]).shape[0]), minor=True)
+    axs.set_xticklabels(np.arange(1, np.array(data["unavailable_slots"]).shape[1] + 1))  # 整数ラベルのみ
+    axs.set_yticklabels(np.arange(1, np.array(data["unavailable_slots"]).shape[0] + 1))
+    axs.grid(which="both", color="gray", linestyle="--", linewidth=0.5)
+    axs.grid(which="major", color="none")
+    
+
+    # レジェンドの作成
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color="green", lw=4, label="Preferences"),
+        Line2D([0], [0], color="red", lw=4, label="Unavailable Slots")
+    ]
+    axs.legend(handles=legend_elements, loc="upper right", fontsize=10)
+
+    plt.show()
+
 
 def show_graph(file_path):
     # JSONファイルからデータを読み込む
@@ -50,6 +98,7 @@ def show_graph(file_path):
     axs[1].grid(which="both", color="gray", linestyle="--", linewidth=0.5)
     axs[1].grid(which="major", color="none")
 
+    
     # 3. 従業員の希望と利用不可スロットのオーバーレイ
     pref_img = axs[2].imshow(data["preferences"], cmap=ListedColormap(["white", "Green"]), aspect="auto", alpha=0.5)
     unavail_img = axs[2].imshow(data["unavailable_slots"], cmap=ListedColormap(["white", "Red"]), aspect="auto", alpha=0.5)
@@ -65,7 +114,7 @@ def show_graph(file_path):
     axs[2].set_yticklabels(np.arange(1, np.array(data["unavailable_slots"]).shape[0] + 1))
     axs[2].grid(which="both", color="gray", linestyle="--", linewidth=0.5)
     axs[2].grid(which="major", color="none")
-
+    
 
     # レジェンドの作成
     from matplotlib.lines import Line2D

@@ -1,13 +1,18 @@
 """
-1段階目:各シフトパターンに割り当てる人数を確定
-    従業員の希望を考慮
-2段階目:従業員を各シフトパターンに割り付ける
-という順でシフトを作成するプログラム
+pyscipopt
+勤務希望優先(複数選択)(a=2)
+一段階目:全従業員に対し,最適なシフトパターンを一つ割り付け(勤務希望最大化)
+第二段階:従業員が勤務するかどうかを決定(超過人数最小化)
 """
+import sys
+import time
 
+# passの設定 (pip showで出てきた、LocationのPASSを以下に設定)
+sys.path.append('/Users/hymac/mypy/lib/python3.12/site-packages')
 import json
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value
+from pyscipopt import Model
 
 def solve(file_path,printLog):
 
@@ -47,91 +52,154 @@ def solve(file_path,printLog):
 
     # 従業員の勤務不可能（1: 不可、0: ？）
     h_N = shift_data["unavailable_slots"]
+    
+
+    # 初期化：v_values（各従業員の勤務フラグ）
+    v_values = {p: {s: 0 for s in range(n_S)} for p in range(n_L)} # 従業員が働くかどうかのフラグ
+
+    
+
+    # 初期化：勤務充足度を保存する辞書
+    work_satisfaction = {}
+
+    # 初期化：u_values のデフォルト初期化（全従業員・全シフトを対象）
+    u_values = {p: {s: 0 for s in range(n_S)} for p in range(n_L)}
+    ret=[0]*5
+
+    for p in range(n_L):
+        model = Model(f"assign_u_p_{p}")
+        u = {}
+        for s in range(n_S):
+            u[s] = model.addVar(f"u_{p}_{s}", vtype = "B")
+        model.addCons(sum(u[s] for s in range(n_S)) <= 2)
+        model.addCons(
+            sum(w[s][t] * u[s] * h_N[p][t] for s in range(n_S) for t in range(n_T)) == 0
+        )
+        model.setObjective(
+            sum(w[s][t] * u[s] * h_P[p][t] for t in range(n_T) for s in range(n_S))+0.001*sum(w[s][t]*u[s] for t in range(n_T) for s in range(n_S)),"maximize"
+        )
+        model.optimize()
+        if model.getStatus() == "optimal":
+                for s in range(n_S):
+                    u_values[p][s]=model.getVal(u[s])
+                #work_satisfaction[p] = model.getVal(u[s])                
+        else:
+                print("Problem could not be solved to optimality")
+                for s in range(n_S):
+                    u_values[p][s]=0
+                work_satisfaction[p] = 0
+
+                
+    # ---- 第二段階: v[p]を決定しペナルティを最小化する ----
+    start = time.perf_counter()
+    model = Model("assign_v")
+
+    # 変数の定義
+    v = {}
+    for p in range(n_L):
+        v[p] = {}
+        for s in range(n_S):
+            v[p][s] = model.addVar(vtype="B", name=f"v_{p}_{s}")
+    
+    for t in range(n_T):
+        
+        model.addCons(
+            sum(w[s][t] * v[p][s]  for p in range(n_L) for s in range(n_S)) >= n_D[t]
+        )
+    for p in range(n_L):
+        for s in range(n_S):
+            model.addCons(v[p][s] <= u_values[p][s])
+    for p in range(n_L):
+        model.addCons(
+            sum(v[p][s] for s in range(n_S)) <= 1
+        )
+        
+
+        # 目的関数の設定
+    model.setObjective(
+        sum(
+            sum(w[s][t] * v[p][s]  for p in range(n_L) for s in range(n_S)) - n_D[t] for t in range(n_T)
+            ),
+        "minimize"
+    )
+
+    # 最適化の実行
+    model.optimize()
+    end = time.perf_counter()
+
+    # ---- 結果の処理 ----
+    if model.getStatus() == "optimal":
+        ret[1]=1
+        optimal_value = model.getObjVal()  # 現在のOptimalValueを取得
+        #optimal_value.append(optimal_value)  # リストに保存
+
+            # v_valuesの更新
+        for p in range(n_L):       
+            for s in range(n_S):
+                v_values[p][s] = model.getVal(v[p][s])  # vの値を更新
+        
+        for p in range(n_L):
+            work_satisfaction[p] = sum(w[s][t] * v_values[p][s] * h_P[p][t] for t in range(n_T) for s in range(n_S))
+
+    else:
+        print("Problem could not be solved to optimality")
+        ret[1] = 0
+
 
     # 問題の定義
+    '''
     problem1 = LpProblem("Shift_Assignment", LpMinimize)
     problem2 = LpProblem("Shift_Assignment", LpMaximize)
 
     # 変数の設定
     x = LpVariable.dicts("x", range(n_S), lowBound=0, cat='Integer')  # シフトパターンに割り当てる人数
     y = LpVariable.dicts("y", (range(n_L), range(n_S)), cat='Binary')  # 従業員がシフトパターンに割り当てられているか
+    '''
 
     #返り値
     #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時]
-    ret=[0]*4
-
-    #################１段目#################
-
-    #希望的適合度計算
-    gamma=[[0]*n_S for _ in range(n_L)]
-    M=1001001001 #十分大きな数
-    for s in range(n_S):
-        num_work_times=sum(w[s])
-        for l in range(n_L):
-            gamma[l][s]=sum(w[s][t]*(h_P[l][t]-M*h_N[l][t]) for t in range(n_T))/num_work_times
-
-    #希望充足度
-    delta=[0]*n_S
-    for s in range(n_S):
-        delta[s]=sum(max(0,gamma[l][s]) for l in range(n_L))/n_L
-
-    # 目的関数: 超過人数の最小化
-    problem1 += lpSum([lpSum([w[s][t] * x[s] for s in range(n_S)]) - n_D[t] for t in range(n_T)]) -10*lpSum([delta[s] * x[s] for s in range(n_S)]) 
-
-    # 制約条件の設定
-    for t in range(n_T):
-        problem1 += lpSum([lpSum([w[s][t] * x[s] for s in range(n_S)])]) >= n_D[t]  # 各時間帯の必要人数
-        problem1 += lpSum(x[s] for s in range(n_S)) <= n_L  # 各時間帯の必要人数
-
-    # 問題の解決
-    problem1.solve(PULP_CBC_CMD(msg=False))
-    ret[0]=problem1.status
-
-    #################２段目#################
+    
+    ret[0]=1
+    
+    
 
 
-    # 目的関数: 従業員の希望の最大化
-    problem2 += lpSum([lpSum([lpSum([y[l][s] * w[s][t] * h_P[l][t] for s in range(n_S)])] for t in range(n_T))] for l in range(n_L))
+        # ---- ループの回数とOptimalValueの遷移を表示 ----
+    print("Optimal value transitions:")
 
-    for l in range(n_L):
-        for t in range(n_T):
-            problem2 += lpSum([y[l][s] * w[s][t] * h_N[l][t] for s in range(n_S)]) == 0  # 各従業員のシフトパターン制約
 
-    for s in range(n_S):
-        problem2 += lpSum([y[l][s] for l in range(n_L)]) == value(x[s])  # シフトパターンに必要人数
+    # ---- 最終結果の表示 ----
+    print("\nFinal Summary:")
 
-    for l in range(n_L):
-        problem2 += lpSum([y[l][s] for s in range(n_S)]) <= 1  # 割り付けるシフトパターンは一個まで
-
-    # 問題の解決
-    problem2.solve(PULP_CBC_CMD(msg=False))
-    ret[1]=problem2.status
-    ret[2]=sum(sum(w[s][t]*value(x[s]) for s in range(n_S))-n_D[t] for t in range(n_T))
-    ret[3]=value(problem2.objective)/n_L
-
-    # 結果の表示
-    if printLog:
-        if problem1.status == 1:
-            print(f"超過人数: {ret[2]}")
-            print(f"各シフトパターンの割り当て人数:{[int(value(x[v])) for v in x]}")
-        else:
-            print("The optimal solution for the first step was not found.")
-
-        if problem2.status == 1:
-            assigned_shifts = []
-            for l in range(n_L):
-                unallocated=True
-                for s in range(n_S):
-                    if value(y[l][s]) == 1 :
-                        assigned_shifts.append(s+1)
-                        unallocated=False
-                        break
-                if unallocated:
-                    assigned_shifts.append(-1)
-                    
-            print(f"２階目の従業員の割り当て:{assigned_shifts}")
-            print("従業員満足度:",ret[3])
-        else:
-            print("The optimal solution for the second step was not found.")
-
+    # 各従業員の結果を出力
+    
+    for p in range(n_L):
+        print(f"従業員 {p}:")
+        
+        # 割り当てられたシフトを表示
+        assigned_shifts = [s for s in range(n_S) if u_values[p][s] == 1.0]
+        print(f"  割り当てられたシフト: {assigned_shifts}")
+    if model.getStatus() == "optimal":
+        for p in range(n_L):
+            # v[p]の勤務シフトを出力する
+            for s in range(n_S):
+                if v_values[p][s] == 1:
+                    print(f"  勤務するシフト:{s:.0f}")
+                    print(f"  勤務充足度: {work_satisfaction[p]:.2f}")
+        print(f"勤務充足度合計:  {sum(work_satisfaction[p] for p in range(n_L))}")
+        labor_positive_sum = sum(v_values[l][s] * w[s][t] * h_P[l][t] for l in range(n_L) for s in range(n_S) for t in range(n_T))
+        want_work = sum(h_P[l][t] for l in range(n_L) for t in range(n_T))/(n_L*n_T)
+        ret[3] = labor_positive_sum /(sum(w[s][t] * v_values[l][s] for s in range(n_S) for t in range(n_T) for l in range(n_L)) * want_work)
+        
+        
+    
+    # 超過人数の計算（修正後）
+    total_excess = sum(
+        max(0, sum((w[s][t] * v_values[p][s] * u_values[p][s])for p in range(n_L) for s in range(n_S)) - n_D[t]) 
+         for t in range(n_T)
+         )
+    print(f"超過人数:  {total_excess}")
+    print('計測時間{:.2f}'.format((end-start)*1000)) 
+    ret[2] = total_excess/sum(n_D[t] for t in range(n_T))
+    ret[4] = (end-start)*1000
     return ret
