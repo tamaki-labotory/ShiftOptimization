@@ -1,5 +1,5 @@
-from matsu import solve_program1
-from matsu import solve_program2
+from program.matsu import shift_scheduler1
+from program.matsu import shift_scheduler2
 from matsu import solve_program3
 from matsu import solve_program4
 from matsu import solve_program5
@@ -23,7 +23,7 @@ def multiple_problem(printLog):
         append_flag=True
         if printLog:
             print(f"\n~~~~Results of Problem{file[50:-5]}~~~~")
-        ret.append(solve_program1.solve(file,printLog))
+        ret.append(shift_scheduler1.solve(file,printLog))
         if ret[-1][0]==1:
             cnt1_f+=1
         if ret[-1][1]==1:
@@ -36,7 +36,7 @@ def multiple_problem(printLog):
         if printLog:
             print("~~~~~~~~~~~~~~~~~~~~~~")
         #2個目のプログラム結果
-        ret.append(solve_program2.solve(file,printLog))
+        ret.append(shift_scheduler2.solve(file,printLog))
         if ret[-1][1]==1:
             cnt2_s+=1
             cnt2_total+=1
@@ -81,9 +81,11 @@ def multiple_problem(printLog):
 
 
 def single_problem(file_path,printLog):
-    solve_program1.solve(file_path,printLog)
+    ShiftScheduler1=shift_scheduler1.ShiftScheduler1(file_path,printLog)
+    ShiftScheduler1.solve()
     print("~~~~~~~~~~~~~~~~~~~~~~")
-    solve_program2.solve(file_path,printLog)
+    ShiftScheduler2=shift_scheduler2.ShiftScheduler2(file_path,printLog)
+    ShiftScheduler2.solve()
     print("~~~~~~~~~~~~~~~~~~~~~~")
     ret=solve_program3.solve(file_path,printLog)
 
