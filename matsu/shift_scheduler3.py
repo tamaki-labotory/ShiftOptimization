@@ -6,7 +6,7 @@
 """
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value
-from program.mojule.shift_scheduler import ShiftScheduler
+from mojule.shift_scheduler import ShiftScheduler
 
 class ShiftScheduler3(ShiftScheduler):
     def solve(self):
