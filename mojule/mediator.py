@@ -1,10 +1,13 @@
-from program.matsu import shift_scheduler1
-from program.matsu import shift_scheduler2
-from matsu import solve_program3
-from matsu import solve_program4
-from matsu import solve_program5
+import sys
+import os
+# プロジェクトのルートディレクトリをsys.pathに追加
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from ..matsu import shift_scheduler1
+from ..matsu import shift_scheduler2
+from ..matsu import shift_scheduler3
 import numpy as np
-import graph
+import program.mojule.graph as graph
 import glob
 
 
@@ -83,16 +86,20 @@ def multiple_problem(printLog):
 def single_problem(file_path,printLog):
     ShiftScheduler1=shift_scheduler1.ShiftScheduler1(file_path,printLog)
     ShiftScheduler1.solve()
+    ShiftScheduler1.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
     ShiftScheduler2=shift_scheduler2.ShiftScheduler2(file_path,printLog)
     ShiftScheduler2.solve()
+    ShiftScheduler2.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
-    ret=solve_program3.solve(file_path,printLog)
+    ShiftScheduler3=shift_scheduler3.ShiftScheduler3(file_path,printLog)
+    ShiftScheduler3.solve()
+    ShiftScheduler3.print_results()
 
     #　条件可視化
     sdv=graph.ShiftDataVisualizer(file_path)
     # sdv.show_graph()
-    sdv.show_assingn_state(ret[4])
+    sdv.show_assingn_state(ShiftScheduler3.ret[4])
     
 
 def mediator(s_or_m,file_path,printLog):

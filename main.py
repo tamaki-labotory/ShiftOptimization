@@ -1,7 +1,7 @@
 """
 各種ソルバーを実行するメインプログラム
 """
-from matsu import mediator
+from program.mojule import mediator
 
 
 # メインプログラムとして実行された場合にmain()を呼び出す

@@ -6,7 +6,7 @@ from heapq import nlargest
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from graph import ShiftDataVisualizer
+from program.mojule.graph import ShiftDataVisualizer
 from matplotlib import pyplot as plt
 
 class Chromosome(ABC):

@@ -7,8 +7,8 @@ from heapq import nlargest
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from genetic_algorithm_module import Chromosome
-from genetic_algorithm_module import GeneticAlgorithm
+from program.matsu.genetic_algorithm_module import Chromosome
+from program.matsu.genetic_algorithm_module import GeneticAlgorithm
 import numpy as np
 
 M:int=1001001001
