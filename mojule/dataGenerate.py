@@ -63,7 +63,7 @@ def generate_required_employees(time_slots):
     return required_employees
 
 
-def create_new_problem(file_path1,file_path2):
+def create_new_problem(index):
     # パラメータ設定
     time_slots = 12
     num_employees = np.random.randint(15, 20)
@@ -75,6 +75,35 @@ def create_new_problem(file_path1,file_path2):
     unavailable_slots = [generate_unavailable_timezone(shift_preferences[i],time_slots) for i in range(num_employees)]
     required_employees_per_time_slot = generate_required_employees(time_slots)
 
+# JSON保存
+    with open(f"json/shift_patterns_{index}.json", "w") as f:
+        json.dump({"shift_patterns": shift_patterns}, f, indent=4)
+
+    with open(f"json/preferences_and_unavailable_slots_{index}.json", "w") as f:
+        json.dump(
+            {"preferences": shift_preferences, "unavailable_slots": unavailable_slots},
+            f,
+            indent=4
+        )
+
+    with open(f"json/required_employees_{index}.json", "w") as f:
+        json.dump({"required_employees": required_employees_per_time_slot}, f, indent=4)
+
+    # TXT保存
+    with open(f"txt/shift_patterns_{index}.txt", "w") as f:
+        f.write(f"shift_patterns:\n{shift_patterns}\n")
+
+    with open(f"txt/preferences_and_unavailable_slots_{index}.txt", "w") as f:
+        f.write(f"preferences:\n{shift_preferences}\n")
+        f.write(f"unavailable_slots:\n{unavailable_slots}\n")
+
+    with open(f"txt/required_employees_{index}.txt", "w") as f:
+        f.write(f"required_employees:\n{required_employees_per_time_slot}\n")
+
+for i in range(200):
+    create_new_problem(i + 1)
+
+'''    
     # 結果の出力
     shift_data = {
         "required_employees": required_employees_per_time_slot,
@@ -82,6 +111,7 @@ def create_new_problem(file_path1,file_path2):
         "preferences": shift_preferences,
         "unavailable_slots": unavailable_slots
     }
+
 
     # JSON形式で保存
     with open(file_path1, "w") as f:
@@ -95,4 +125,4 @@ def create_new_problem(file_path1,file_path2):
 
 for i in range(200):
     create_new_problem(f'json/shift_data{i+1}.json',f'txt/shift_data{i+1}.txt')
-
+'''

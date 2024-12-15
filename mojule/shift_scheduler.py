@@ -1,10 +1,14 @@
+##帆前環境用
+import sys
+sys.path.append('/Users/hymac/mypy/lib/python3.12/site-packages')
+##
 import json
 import numpy as np
 from pulp import LpProblem, LpVariable, LpMinimize, LpMaximize, lpSum, PULP_CBC_CMD, value
 
 class ShiftScheduler:
-    def __init__(self, file_path, print_log=False):
-        self.file_path = file_path
+    def __init__(self, file_paths, print_log=False):
+        self.file_paths = file_paths
         self.print_log = print_log
         self.shift_data = self._load_data() #データをロード
 
@@ -33,11 +37,32 @@ class ShiftScheduler:
         #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時,???,???]
         self.ret=[0]*6
 
+    def _load_data(self):
+            """データを3つのJSONファイルからロード"""
+            data = {}
+
+            # シフトパターン
+            with open(self.file_paths["shift_patterns"], "r") as f:
+                data["shift_patterns"] = json.load(f)["shift_patterns"]
+
+            # 勤務希望と勤務不可能
+            with open(self.file_paths["preferences_and_unavailable_slots"], "r") as f:
+                pref_data = json.load(f)
+                data["preferences"] = pref_data["preferences"]
+                data["unavailable_slots"] = pref_data["unavailable_slots"]
+
+            # 時間帯当たり必要人数
+            with open(self.file_paths["required_employees"], "r") as f:
+                data["required_employees"] = json.load(f)["required_employees"]
+
+            return data
+        
+    '''
     #データをロードする関数
     def _load_data(self):
         with open(self.file_path, "r") as f:
             return json.load(f)
-
+    '''
     #問題を解く関数
     def solve(self):
         raise NotImplementedError("Subclasses should implement the solve method.")

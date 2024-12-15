@@ -10,24 +10,61 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 
 
 class ShiftDataVisualizer:
-    def __init__(self,file_path=None,data=None):
-        if file_path!=None:
-            self.data=self._load_data(file_path)
-        if data!=None:
-            self.data=data
+    def __init__(self, file_paths=None, data=None):
+        if file_paths is not None:
+            self.data = self._load_data(file_paths)
+            print("Loaded data:", self.data)  # デバッグ用にデータを出力
+        elif data is not None:
+            self.data = data
+            print("11111111111")  
+        else:
+            self.data = {}  # デフォルト値として空の辞書を設定
+            print("222222222222")  
 
+    def _load_data(self, file_paths):
+        """
+        3つのJSONファイルからデータを読み込むメソッド。
 
-    def _load_data(self,file_path):
-        """JSONファイルからデータを読み込むメソッド"""
-        with open(file_path, "r") as f:
-            shift_data = json.load(f)
-        
-        return {
-            "required_employees": shift_data["required_employees"],
-            "shift_patterns": shift_data["shift_patterns"],
-            "preferences": shift_data["preferences"],
-            "unavailable_slots": shift_data["unavailable_slots"]
-        }
+        file_paths: 辞書形式で各ファイルパスを指定
+            {
+                "shift_patterns": "path/to/shift_patterns.json",
+                "preferences_and_unavailable_slots": "path/to/preferences_and_unavailable_slots.json",
+                "required_employees": "path/to/required_employees.json"
+            }
+        """
+        try:
+            # シフトパターン
+            with open(file_paths["shift_patterns"], "r") as f:
+                shift_patterns = json.load(f)["shift_patterns"]
+
+            # 希望と不可スロット
+            with open(file_paths["preferences_and_unavailable_slots"], "r") as f:
+                pref_unavail_data = json.load(f)
+                preferences = pref_unavail_data["preferences"]
+                unavailable_slots = pref_unavail_data["unavailable_slots"]
+
+            # 必要人数
+            with open(file_paths["required_employees"], "r") as f:
+                required_employees = json.load(f)["required_employees"]
+
+            # データ統合
+            return {
+                "required_employees": required_employees,
+                "shift_patterns": shift_patterns,
+                "preferences": preferences,
+                "unavailable_slots": unavailable_slots
+            }
+
+        except KeyError as e:
+            print(f"Missing key in the data files: {e}")
+            raise
+        except FileNotFoundError as e:
+            print(f"File not found: {e}")
+            raise
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            raise
+
       
     def show_graph(self):
         plt.style.use("ggplot")
@@ -90,6 +127,10 @@ class ShiftDataVisualizer:
 
     def show_assingn_state(self, assigned_shifts):
         plt.style.use("ggplot")  # グラフのスタイルを設定
+        if not self.data:
+            raise ValueError("No data available. Please provide a valid file_path or data.")
+        if "required_employees" not in self.data or "shift_patterns" not in self.data:
+            raise ValueError("The data does not contain required keys: 'required_employees' or 'shift_patterns'.")
 
         fig, ax = plt.subplots(figsize=(12, 8))  # グラフのサイズを設定
 
