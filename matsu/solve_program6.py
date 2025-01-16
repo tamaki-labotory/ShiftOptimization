@@ -1,205 +1,115 @@
-"""
-pyscipopt
-勤務希望優先(複数選択)(a=4)
-一段階目:全従業員に対し,最適なシフトパターンを一つ割り付け(勤務希望最大化)
-第二段階:従業員が勤務するかどうかを決定(超過人数最小化)
-"""
-import sys
-import time
-
-# passの設定 (pip showで出てきた、LocationのPASSを以下に設定)
-sys.path.append('/Users/hymac/mypy/lib/python3.12/site-packages')
-import json
+import random
+from deap import base, creator, tools, algorithms
 import numpy as np
-from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value
-from pyscipopt import Model
+import matplotlib.pyplot as plt
+import sys
+sys.path.append("/Users/matsumura/Desktop/修論/solver") 
+import program.mojule.graph as graph
+from matplotlib.colors import ListedColormap, BoundaryNorm
+from pulp import LpVariable, lpSum, value, LpProblem, LpMinimize,LpMaximize, PULP_CBC_CMD,LpStatusOptimal
 
-def solve(file_path,printLog):
+# パラメータの定義
+n_S = 5  # シフト数
+n_T = 3  # 時間帯数
+n_L = 4  # 従業員数
+# ランダムなデータ
+np.random.seed(0)
+w = np.random.randint(1, 3, (n_S, n_T))      # 各シフトの従業員数
+n_D = np.random.randint(5, 10, n_T)          # 各時間帯の必要人数
+h_P = np.random.randint(0, 2, (n_L, n_T))    # 各従業員の希望
+h_N = np.random.randint(0, 2, (n_L, n_T))    # 各従業員の希望外シフト
 
-    # JSONファイルからデータを読み込む
-    with open(file_path, "r") as f:
-        shift_data = json.load(f)
+data = {
+        "required_employees": n_D,
+        "shift_patterns": w,
+        "preferences": h_P,
+        "unavailable_slots": h_N
+    }
 
-    # # 読み込んだデータの表示
-    # print("Required Employees per Time Slot:")
-    # print(shift_data["required_employees"])
+sdv=graph.ShiftDataVisualizer(None,data)
+sdv.show_graph()
 
-    # print("\nShift Patterns:")
-    # for i, pattern in enumerate(shift_data["shift_patterns"]):
-    #     print(f"Pattern {i+1}: {pattern}")
+# 制約違反のペナルティ係数
+penalty1 = 10.0
+penalty2 = 5.0
 
-    # print("\nPreferences:")
-    # for i, preference in enumerate(shift_data["preferences"]):
-    #     print(f"Employee {i+1}: {preference}")
+# 遺伝的アルゴリズムのセットアップ
+creator.create("FitnessMulti", base.Fitness, weights=(-1.0, -1.0))
+creator.create("Individual", list, fitness=creator.FitnessMulti)
+toolbox = base.Toolbox()
+toolbox.register("attr_bool", random.randint, 0, 1)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, n_S)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-    # print("\nUnavailable Slots:")
-    # for i, unavailable in enumerate(shift_data["unavailable_slots"]):
-    #     print(f"Employee {i+1}: {unavailable}")
+# 目的関数の定義
+def objective(individual):
+    # シフト変数 x を定義
+    x = [LpVariable(f"x_{s}", cat="Binary") for s in range(n_S)]
 
-    # 定数の設定
-    n_S = np.array(shift_data["shift_patterns"]).shape[0]
-    n_T = np.array(shift_data["shift_patterns"]).shape[1]
-    n_L = np.array(shift_data["preferences"]).shape[0]
-
-    # 時間帯当たり必要人数
-    n_D = shift_data["required_employees"]
-
-    # 各シフトパターンごとで、勤務する時間帯でか（1: 必要、0: 不要）
-    w = shift_data["shift_patterns"]
-
-    # 従業員の勤務希望（1: 希望、0: 不希望）
-    h_P = shift_data["preferences"]
-
-    # 従業員の勤務不可能（1: 不可、0: ？）
-    h_N = shift_data["unavailable_slots"]
+    # 問題1: 超過人数の最小化
+    problem1 = LpProblem("Minimize_OverLabors", LpMinimize)
+    over_labors_cost = lpSum([lpSum([w[s][t] * individual[s] for s in range(n_S)]) - n_D[t] for t in range(n_T)])
     
+    # ペナルティを追加
+    penalty1_cost = penalty1 * lpSum([n_D[t] - lpSum(w[s][t] * individual[s] for s in range(n_S)) for t in range(n_T) if value(lpSum(w[s][t] * individual[s] for s in range(n_S))) < n_D[t]])
+    problem1 += over_labors_cost + penalty1_cost
 
-    # 初期化：v_values（各従業員の勤務フラグ）
-    v_values = {p: {s: 0 for s in range(n_S)} for p in range(n_L)} # 従業員が働くかどうかのフラグ
-
+    # 解を求める
+    problem1.solve(PULP_CBC_CMD(msg=False))
     
-
-    # 初期化：勤務充足度を保存する辞書
-    work_satisfaction = {}
-
-    # 初期化：u_values のデフォルト初期化（全従業員・全シフトを対象）
-    u_values = {p: {s: 0 for s in range(n_S)} for p in range(n_L)}
-    ret=[0]*5
-
-    for p in range(n_L):
-        model = Model(f"assign_u_p_{p}")
-        u = {}
-        for s in range(n_S):
-            u[s] = model.addVar(f"u_{p}_{s}", vtype = "B")
-        model.addCons(sum(u[s] for s in range(n_S)) <= 4)
-        model.addCons(
-            sum(w[s][t] * u[s] * h_N[p][t] for s in range(n_S) for t in range(n_T)) == 0
-        )
-        model.setObjective(
-            sum(w[s][t] * u[s] * h_P[p][t] for t in range(n_T) for s in range(n_S))+0.001*sum(w[s][t]*u[s] for t in range(n_T) for s in range(n_S)),"maximize"
-        )
-        model.optimize()
-        if model.getStatus() == "optimal":
-                for s in range(n_S):
-                    u_values[p][s]=model.getVal(u[s])
-                #work_satisfaction[p] = model.getVal(u[s])                
-        else:
-                print("Problem could not be solved to optimality")
-                for s in range(n_S):
-                    u_values[p][s]=0
-                work_satisfaction[p] = 0
-
-                
-    # ---- 第二段階: v[p]を決定しペナルティを最小化する ----
-    start = time.perf_counter()
-    model = Model("assign_v")
-
-    # 変数の定義
-    v = {}
-    for p in range(n_L):
-        v[p] = {}
-        for s in range(n_S):
-            v[p][s] = model.addVar(vtype="B", name=f"v_{p}_{s}")
+    # 問題2: 従業員の希望の最大化
+    problem2 = LpProblem("Maximize_FulfillPreferences", LpMaximize)
+    fulfill_preferences_cost = lpSum([lpSum([individual[s] * w[s][t] * h_P[l][t] for s in range(n_S)]) for t in range(n_T) for l in range(n_L)])
     
-    for t in range(n_T):
-        
-        model.addCons(
-            sum(w[s][t] * v[p][s]  for p in range(n_L) for s in range(n_S)) >= n_D[t]
-        )
-    for p in range(n_L):
-        for s in range(n_S):
-            model.addCons(v[p][s] <= u_values[p][s])
-    for p in range(n_L):
-        model.addCons(
-            sum(v[p][s] for s in range(n_S)) <= 1
-        )
-        
+    # ペナルティを追加
+    penalty2_cost = penalty2 * lpSum([lpSum(individual[s] * w[s][t] * h_N[l][t] for s in range(n_S)) for t in range(n_T) for l in range(n_L)])
+    problem2 += fulfill_preferences_cost + penalty2_cost
 
-        # 目的関数の設定
-    model.setObjective(
-        sum(
-            sum(w[s][t] * v[p][s]  for p in range(n_L) for s in range(n_S)) - n_D[t] for t in range(n_T)
-            ),
-        "minimize"
-    )
-
-    # 最適化の実行
-    model.optimize()
-    end = time.perf_counter()
-
-    # ---- 結果の処理 ----
-    if model.getStatus() == "optimal":
-        ret[1]=1
-        optimal_value = model.getObjVal()  # 現在のOptimalValueを取得
-        #optimal_value.append(optimal_value)  # リストに保存
-
-            # v_valuesの更新
-        for p in range(n_L):       
-            for s in range(n_S):
-                v_values[p][s] = model.getVal(v[p][s])  # vの値を更新
-        
-        for p in range(n_L):
-            work_satisfaction[p] = sum(w[s][t] * v_values[p][s] * h_P[p][t] for t in range(n_T) for s in range(n_S))
-
+    # 解を求める
+    problem2.solve(PULP_CBC_CMD(msg=False))
+    
+    # 解が見つかったか確認し、それに応じて値を返す
+    if problem1.status == LpStatusOptimal and value(problem1.objective) is not None:
+        objective1 = value(problem1.objective)
     else:
-        print("Problem could not be solved to optimality")
-        ret[1] = 0
-
-
-    # 問題の定義
-    '''
-    problem1 = LpProblem("Shift_Assignment", LpMinimize)
-    problem2 = LpProblem("Shift_Assignment", LpMaximize)
-
-    # 変数の設定
-    x = LpVariable.dicts("x", range(n_S), lowBound=0, cat='Integer')  # シフトパターンに割り当てる人数
-    y = LpVariable.dicts("y", (range(n_L), range(n_S)), cat='Binary')  # 従業員がシフトパターンに割り当てられているか
-    '''
-
-    #返り値
-    #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時]
+        objective1 = float('inf')  # ペナルティとして非常に大きな値を設定
     
-    ret[0]=1
-    
-    
+    if problem2.status == LpStatusOptimal and value(problem2.objective) is not None:
+        objective2 = value(problem2.objective)
+    else:
+        objective2 = float('-inf')  # ペナルティとして非常に小さな値を設定
+
+    return objective1, -objective2  # 最小化のため、希望充足度は符号を反転
 
 
-        # ---- ループの回数とOptimalValueの遷移を表示 ----
-    print("Optimal value transitions:")
+# 評価関数を登録
+toolbox.register("evaluate", objective)
+toolbox.register("mate", tools.cxTwoPoint)
+toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+toolbox.register("select", tools.selNSGA2)
 
+# 遺伝的アルゴリズムの実行
+def main():
+    random.seed(0)
+    population = toolbox.population(n=100)
+    NGEN = 50  # 世代数
+    MU = 50    # 選択する親の数
+    LAMBDA = 100  # 子孫数
+    CXPB, MUTPB = 0.7, 0.2  # 交叉と突然変異の確率
 
-    # ---- 最終結果の表示 ----
-    print("\nFinal Summary:")
-
-    # 各従業員の結果を出力
-    
-    for p in range(n_L):
-        print(f"従業員 {p}:")
+    # NSGA-IIで進化を繰り返す
+    for gen in range(NGEN):
+        offspring = algorithms.varOr(population, toolbox, lambda_=LAMBDA, cxpb=CXPB, mutpb=MUTPB)
+        fits = map(toolbox.evaluate, offspring)
         
-        # 割り当てられたシフトを表示
-        assigned_shifts = [s for s in range(n_S) if u_values[p][s] == 1.0]
-        print(f"  割り当てられたシフト: {assigned_shifts}")
-    if model.getStatus() == "optimal":
-        for p in range(n_L):
-            # v[p]の勤務シフトを出力する
-            for s in range(n_S):
-                if v_values[p][s] == 1:
-                    print(f"  勤務するシフト:{s:.0f}")
-                    print(f"  勤務充足度: {work_satisfaction[p]:.2f}")
-        print(f"勤務充足度合計:  {sum(work_satisfaction[p] for p in range(n_L))}")
-        labor_positive_sum = sum(v_values[l][s] * w[s][t] * h_P[l][t] for l in range(n_L) for s in range(n_S) for t in range(n_T))
-        want_work = sum(h_P[l][t] for l in range(n_L) for t in range(n_T))/(n_L*n_T)
-        ret[3] = labor_positive_sum /(sum(w[s][t] * v_values[l][s] for s in range(n_S) for t in range(n_T) for l in range(n_L)) * want_work)
+        for fit, ind in zip(fits, offspring):
+            ind.fitness.values = fit
+        population = toolbox.select(offspring, k=MU)
         
-        
-    
-    # 超過人数の計算（修正後）
-    total_excess = sum(
-        max(0, sum((w[s][t] * v_values[p][s] * u_values[p][s])for p in range(n_L) for s in range(n_S)) - n_D[t]) 
-         for t in range(n_T)
-         )
-    print(f"超過人数:  {total_excess}")
-    print('計測時間{:.2f}'.format((end-start)*1000)) 
-    ret[2] = total_excess/sum(n_D[t] for t in range(n_T))
-    ret[4] = (end-start)*1000
-    return ret
+    return population
+
+# 遺伝的アルゴリズムの結果を取得し、結果の評価
+if __name__ == "__main__":
+    final_population = main()
+    for ind in final_population:
+        print(f"Individual: {ind}, Objective Values: {ind.fitness.values}")
