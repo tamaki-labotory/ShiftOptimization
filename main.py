@@ -16,7 +16,7 @@ if __name__ == "__main__":
     #帆前用実行関数
     file_paths = {
         "shift_patterns": "/Users/hymac/mypy/ShiftOptimization-progress1/json/shift_patterns_1.json",
-        "preferences_and_unavailable_slots": "/Users/hymac/mypy/ShiftOptimization-progress1/json/preferences_and_unavailable_slots_difference_1.json",
-        "required_employees": "/Users/hymac/mypy/ShiftOptimization-progress1/json/required_employees_1.json"
+        "preferences_and_unavailable_slots": "/Users/hymac/mypy/ShiftOptimization-progress1/json/preferences_and_unavailable_slots_difference_2.json",
+        "required_employees": "/Users/hymac/mypy/ShiftOptimization-progress1/json/required_employees_difference_1.json"
     }
     mediator.mediator("m",file_paths,True)

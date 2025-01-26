@@ -159,6 +159,57 @@ def create_difference_problem_2(i, shift_patterns, preferences, unavailable_slot
     else:
         print(f"Problem {i}: No changes made to unavailable_slots (no 0 found).")
 
+##必要人数がnum_changes個ランダムに増加
+def create_difference_problem_3(i, shift_patterns, preferences, unavailable_slots, required_employees, num_changes):
+
+    # 元のデータを破壊しないようコピー
+    modified_required_employees = required_employees.copy()  
+
+
+    # 変更箇所をランダムに選択
+    changed_positions = []  # 実際に変更された位置を記録
+    for _ in range(num_changes):
+        #0から時間帯数でとりたい
+        change_position = random.randint(0,len(modified_required_employees))
+        modified_required_employees[change_position-1] += 1
+        changed_positions.append(change_position)
+
+    # 必要なディレクトリを作成
+    ensure_directories_exist(["json", "txt"])
+
+    # JSON保存
+    with open(f"json/shift_patterns_difference_{i}.json", "w") as f:
+        json.dump({"shift_patterns": shift_patterns}, f, indent=4)
+
+    with open(f"json/preferences_and_unavailable_slots_difference_{i}.json", "w") as f:
+        json.dump(
+            {"preferences": preferences, "unavailable_slots": unavailable_slots},
+            f,
+            indent=4
+        )
+
+    with open(f"json/required_employees_difference_{i}.json", "w") as f:
+        json.dump({"required_employees": modified_required_employees}, f, indent=4)
+
+    # TXT保存
+    with open(f"txt/shift_patterns_difference_{i}.txt", "w") as f:
+        f.write(f"shift_patterns:\n{shift_patterns}\n")
+
+    with open(f"txt/preferences_and_unavailable_slots_difference_{i}.txt", "w") as f:
+        f.write(f"preferences:\n{preferences}\n")
+        f.write(f"unavailable_slots:\n{unavailable_slots}\n")
+        if changed_positions:
+            f.write(f"\nChanged positions: {changed_positions}\n")
+
+    with open(f"txt/required_employees_difference_{i}.txt", "w") as f:
+        f.write(f"required_employees:\n{modified_required_employees}\n")
+
+    # 変更箇所を出力
+    if changed_positions:
+        print(f"Problem {i}: Changed positions in required_employees -> {changed_positions}")
+    else:
+        print(f"Problem {i}: No changes made to required_employees  (no 0 found).")
+
 
 def process_files(directory, num_iterations):
     """
@@ -179,7 +230,7 @@ def process_files(directory, num_iterations):
         # 指定された回数だけ問題データを生成
         for iteration in range(num_iterations):
             problem_index =  iteration
-            create_difference_problem_2(problem_index, shift_patterns, preferences, unavailable_slots, required_employees,5)
+            create_difference_problem_3(problem_index, shift_patterns, preferences, unavailable_slots, required_employees,1)
 
 
 # メイン処理

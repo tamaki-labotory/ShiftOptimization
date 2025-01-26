@@ -42,18 +42,15 @@ class ShiftScheduler4(ShiftScheduler):
         model.setObjective(
             sum(sum(self.w[s][t]*x[s] for s in range(self.n_S))-self.n_D[t] for t in range(self.n_T)),"minimize"
         )
-        #start = time.perf_counter()
+        start = time.perf_counter()
         model.optimize()
-        #end = time.perf_counter()
+        end = time.perf_counter()
+        self.ret[7] = (end-start)*1000
         if model.getStatus() == "optimal":
             for s in range(self.n_S):
                 x_values[s] = model.getVal(x[s])
             self.ret[0] = 1
-            over_labors = model.getVal(x[s])
-            #self.ret[2] = over_labors/sum(self.n_D[t] for t in range(self.n_T))
-            self.ret[2] = over_labors
             if self.print_log:
-                print(f"超過人数：{over_labors}")
                 print(f"各シフトパターンの割り付け人数：{x_values}")
         else:
             print("Problem1 could not be solved to optimality")
@@ -118,12 +115,14 @@ class ShiftScheduler4(ShiftScheduler):
             self.ret[1] = 0
 
         print('計測時間{:.2f}'.format((end-start)*1000)) 
-        self.ret[7] = (end-start)*1000
+        self.ret[8] = (end-start)*1000
         
 
         
 
         # 問題の解決
+        ##超過人数の代入
+        self.ret[2] =  sum(sum(self.w[s][t]*y_values[l][s] for l in range(self.n_L) for s in range(self.n_S))- self.n_D[t] for t in range(self.n_T))
 
         assigned_shifts = []
         for l in range(self.n_L):
@@ -137,13 +136,15 @@ class ShiftScheduler4(ShiftScheduler):
                 assigned_shifts.append(-1)
         self.ret.append(assigned_shifts)
         self.ret[5]=assigned_shifts
-        num_pserson_per_shift = [0]*self.n_S
+        num_person_per_shift = [0]*self.n_S
         for s in range(self.n_S):
             for l in range(self.n_L):
                 if y_values[l][s] == 1:
-                    num_pserson_per_shift[s] += 1
-        self.ret[4]=([int(num_pserson_per_shift[s]) for s in num_pserson_per_shift])
+                    num_person_per_shift[s] += 1
+        self.ret[4]=([int(num_person_per_shift[s]) for s in range(self.n_S)])
+        '''
         for s in range(self.n_S):
             for l in range(self.n_L):
-                if y_values[l][s] == 1:
+                if v_values[l][s] == 1:
                     print(f"v_{l}_{s}")
+        '''

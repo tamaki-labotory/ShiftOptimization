@@ -3,6 +3,7 @@ pyscipopt
 必要人数優先(勤務不可での勤務はペナルティ)
 第一段階:従業員毎にシフトパターンを割り付け(勤務希望最大化)
 第二段階:従業員がどのシフトパターンで勤務するか(超過人数最小化)
+一段階目でなるべくバラけたシフトパターンを選択するように工夫したバージョン
 """
 import sys
 import time
@@ -19,7 +20,7 @@ from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, 
 from mojule.shift_scheduler import ShiftScheduler
 
 
-class ShiftScheduler5(ShiftScheduler):
+class ShiftScheduler8(ShiftScheduler):
     def solve(self):
         u_values ={l:{s: 0 for s in range(self.n_S)}for l in range(self.n_L)}
         v_values ={l:{s: 0 for s in range(self.n_S)}for l in range(self.n_L)}
@@ -33,8 +34,8 @@ class ShiftScheduler5(ShiftScheduler):
 
         # 目的関数: 勤務希望時間帯の多いシフトパターンから割り付け
         a = 7
-        omega_1 = 1
-        omega_2 = 100
+        omega_1 = 1/self.n_S*self.n_T*self.n_L
+        omega_2 = self.n_S*self.n_T*self.n_L
         phi_1 = 1
         phi_2 = 1
         for l in range(self.n_L):
@@ -42,12 +43,16 @@ class ShiftScheduler5(ShiftScheduler):
             u = {}
             for s in range(self.n_S):
                 u[s] = model.addVar(vtype="B",name=f"u_{l}_{s}")
+            z = model.addVar(vtype = "I",name = "u")
             
             ##aこシフトパターンを割り付ける
             model.addCons(sum(u[s] for s in range(self.n_S)) == a)
+            for t in range(self.n_T):
+                model.addCons(sum(u[s]*self.w[s][t] for t in range(self.n_T)) <= z)
             model.setObjective(
                 omega_1*phi_1*sum((self.w[s][t]*u[s]*self.h_P[l][t] )for s in range(self.n_S)for t in range(self.n_T)for l in range(self.n_L))
-                -omega_2*phi_2*sum((self.w[s][t]*u[s]*self.h_N[l][t] )for s in range(self.n_S)for t in range(self.n_T)for l in range(self.n_L)),"maximize"
+                -omega_2*phi_2*sum((self.w[s][t]*u[s]*self.h_N[l][t] )for s in range(self.n_S)for t in range(self.n_T)for l in range(self.n_L))
+                -z,"maximize"
             )
             start = time.perf_counter()
             model.optimize()

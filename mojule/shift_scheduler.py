@@ -34,8 +34,8 @@ class ShiftScheduler:
         self.h_N = self.shift_data["unavailable_slots"]
 
         #返り値
-        #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時,???,???,勤務不可での勤務時間合計,計測時間]
-        self.ret=[0]*8
+        #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時,???,???,勤務不可での勤務時間合計,一段階目計測時間,二段階目計測時間]
+        self.ret=[0]*9
 
     def _load_data(self):
             """データを3つのJSONファイルからロード"""
@@ -75,4 +75,5 @@ class ShiftScheduler:
             print(f"Overstaffing Hours: {self.ret[2]}")
             print(f"Employee Satisfaction: {self.ret[3]}")
             print(f"Work at negative: {self.ret[6]}")
-            print(f"Time: {self.ret[7]}")
+            print(f"time for 1st:{self.ret[7]}")
+            print(f"Time for 2nd: {self.ret[8]}")

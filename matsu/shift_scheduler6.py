@@ -31,7 +31,7 @@ class ShiftScheduler6(ShiftScheduler):
         # 目的関数: 超過人数の最小化
         model = Model("1st")
         omega_1 = 1/(self.n_S*self.n_T*self.n_L)
-        omega_2 = 1
+        omega_2 = self.n_S*self.n_T*self.n_L 
         omega_3 = 1
         phi_1 = 1
         phi_2 = 1
@@ -47,9 +47,10 @@ class ShiftScheduler6(ShiftScheduler):
         for l in range(self.n_L):
             model.addCons(sum(v[l][s] for s in range(self.n_S)) <= 1)
         model.setObjective(
-            omega_3*sum(sum(self.w[s][t]*v[l][s] for s in range(self.n_S)for l in range(self.n_L))-self.n_D[t] for t in range(self.n_T))
-            +omega_2*sum(v[l][s]*self.w[s][t]*self.h_N[l][t] for l in range(self.n_L)for s in range(self.n_S)for t in range(self.n_T))
-            -omega_1*sum(v[l][s]*self.w[s][t]*self.h_P[l][t] for l in range(self.n_L)for s in range(self.n_S)for t in range(self.n_T)),"minimize"
+            omega_1*sum(v[l][s]*self.w[s][t]*self.h_P[l][t] for l in range(self.n_L)for s in range(self.n_S)for t in range(self.n_T))
+            -omega_3*sum(sum(self.w[s][t]*v[l][s] for s in range(self.n_S)for l in range(self.n_L))-self.n_D[t] for t in range(self.n_T))
+            -omega_2*sum(v[l][s]*self.w[s][t]*self.h_N[l][t] for l in range(self.n_L)for s in range(self.n_S)for t in range(self.n_T))
+            ,"maximize"
         )
         start = time.perf_counter()
         model.optimize()
@@ -79,8 +80,12 @@ class ShiftScheduler6(ShiftScheduler):
             print("Problem1 could not be solved to optimality")
             self.ret[0] = 0
         print('計測時間{:.2f}'.format((end-start)*1000)) 
-        self.ret[7] = (end-start)*1000     
+        self.ret[8] = (end-start)*1000     
+        self.ret[7] = 0
 
+
+        ##超過人数の代入
+        self.ret[2] =  sum(sum(self.w[s][t]*v_values[l][s] for s in range(self.n_S) for l in range(self.n_L))-self.n_D[t] for t in range(self.n_T))
         # 問題の解決
 
         assigned_shifts = []
@@ -96,13 +101,15 @@ class ShiftScheduler6(ShiftScheduler):
         self.ret.append(assigned_shifts)
         #self.ret[4]=([int(value(x[v])) for v in x])
         self.ret[5]=assigned_shifts
-        num_pserson_per_shift = [0]*self.n_S
+        num_person_per_shift = [0]*self.n_S
         for s in range(self.n_S):
             for l in range(self.n_L):
                 if v_values[l][s] == 1:
-                    num_pserson_per_shift[s] += 1
-        self.ret[4]=([int(num_pserson_per_shift[s]) for s in num_pserson_per_shift])
+                    num_person_per_shift[s] += 1
+        self.ret[4]=([int(num_person_per_shift[s]) for s in range(self.n_S)])
+        '''
         for s in range(self.n_S):
             for l in range(self.n_L):
                 if v_values[l][s] == 1:
                     print(f"v_{l}_{s}")
+        '''

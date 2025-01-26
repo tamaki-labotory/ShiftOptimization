@@ -288,12 +288,12 @@ class ShiftScheduler7(ShiftScheduler):
         self.ret.append(assigned_shifts)
         #self.ret[4]=([int(value(x[v])) for v in x])
         self.ret[5]=assigned_shifts
-        num_pserson_per_shift = [0]*self.n_S
+        num_person_per_shift = [0]*self.n_S
         for s in range(self.n_S):
             for l in range(self.n_L):
                 if v_values[l][s] == 1:
-                    num_pserson_per_shift[s] += 1
-        self.ret[4]=([int(num_pserson_per_shift[s]) for s in num_pserson_per_shift])
+                    num_person_per_shift[s] += 1
+        self.ret[4]=([int(num_person_per_shift[s]) for s in range(self.n_S)])
         for s in range(self.n_S):
             for l in range(self.n_L):
                 if v_values[l][s] == 1:
