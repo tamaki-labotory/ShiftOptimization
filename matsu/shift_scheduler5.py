@@ -1,165 +1,147 @@
-"""
-pyscipopt
-必要人数優先(勤務不可での勤務はペナルティ)
-第一段階:従業員毎にシフトパターンを割り付け(勤務希望最大化)
-第二段階:従業員がどのシフトパターンで勤務するか(超過人数最小化)
-"""
-import sys
-import time
-
-# passの設定 (pip showで出てきた、LocationのPASSを以下に設定)
-sys.path.append('/Users/hymac/mypy/lib/python3.12/site-packages')
 import json
-import math
-import numpy as np
+import os
 from pyscipopt import Model
-
-
-from pulp import LpProblem, LpVariable, LpMinimize,LpMaximize, lpSum, LpStatus, LpStatusOptimal,PULP_CBC_CMD, value
+import time
 from mojule.shift_scheduler import ShiftScheduler
-
 
 class ShiftScheduler5(ShiftScheduler):
     def solve(self):
-        u_values ={l:{s: 0 for s in range(self.n_S)}for l in range(self.n_L)}
-        v_values ={l:{s: 0 for s in range(self.n_S)}for l in range(self.n_L)}
+        x_values = {s: 0 for s in range(self.n_S)}
+        y_values = {l: {s: 0 for s in range(self.n_S)} for l in range(self.n_L)}
 
+        # JSONファイル名の設定
+        x_values_file = "x_values.json"
 
-        #返り値
-        #[1段階目成功可否,2段階目成功可否,超過人時,希望充足時,時間指標]
-
-
-        #################１段目#################
-
-        # 目的関数: 勤務希望時間帯の多いシフトパターンから割り付け
-        a = 7
-        omega_1 = 1
-        omega_2 = 100
-        phi_1 = 1
-        phi_2 = 1
-        for l in range(self.n_L):
-            model = Model(f"assign_u_l_{l}")
-            u = {}
-            for s in range(self.n_S):
-                u[s] = model.addVar(vtype="B",name=f"u_{l}_{s}")
+        ################# 1段目 #################
+        if not os.path.exists(x_values_file):
+            # 1段階目の計算を行う場合
+            print("1段階目の計算を開始します...")
             
-            ##aこシフトパターンを割り付ける
-            model.addCons(sum(u[s] for s in range(self.n_S)) == a)
+            # 目的関数: 超過人数の最小化
+            model = Model("1st")
+            x = {}
+            for s in range(self.n_S):
+                x[s] = model.addVar(f"x_{s}", vtype="I")
+            
+            # 必要人数を満たす制約
+            for t in range(self.n_T):
+                model.addCons(sum(self.w[s][t] * x[s] for s in range(self.n_S)) >= self.n_D[t])
+            
+            # 変数の非負制約
+            for s in range(self.n_S):
+                model.addCons(x[s] >= 0)
+            
+            # 目的関数の設定
             model.setObjective(
-                omega_1*phi_1*sum((self.w[s][t]*u[s]*self.h_P[l][t] )for s in range(self.n_S)for t in range(self.n_T)for l in range(self.n_L))
-                -omega_2*phi_2*sum((self.w[s][t]*u[s]*self.h_N[l][t] )for s in range(self.n_S)for t in range(self.n_T)for l in range(self.n_L)),"maximize"
+                sum(sum(self.w[s][t] * x[s] for s in range(self.n_S)) - self.n_D[t] for t in range(self.n_T)
+                ),
+                "minimize"
             )
+
+            # 最適化実行
             start = time.perf_counter()
             model.optimize()
             end = time.perf_counter()
-            self.ret[7] += (end-start)*1000
+            self.ret[7] = (end - start) * 1000
+
+            # 最適解の確認と保存
             if model.getStatus() == "optimal":
                 for s in range(self.n_S):
-                    u_values[l][s] = model.getVal(u[s])
+                    x_values[s] = model.getVal(x[s])
                 self.ret[0] = 1
+                if self.print_log:
+                    print(f"各シフトパターンの割り付け人数：{x_values}")
                 
+                # 1段階目の結果をJSONファイルに保存
+                with open(x_values_file, "w") as f:
+                    json.dump(x_values, f, indent=4)
+                    print(f"1段階目の結果を保存しました: {x_values_file}")
             else:
                 print("Problem1 could not be solved to optimality")
-                for s in range(self.n_S):
-                    u_values[l][s]=0
                 self.ret[0] = 0
-        
+                return  # 1段階目が失敗した場合、処理を終了する
+        else:
+            # JSONファイルが既に存在する場合
+            print(f"{x_values_file} が既に存在するため、1段階目をスキップします。")
+            self.ret[0] = 1
 
-
-        #################２段目#################
-        model=Model("2nd")
-        v = {}
-        omega = 10000
-        for l in range(self.n_L):
-            v[l] = {}
-            for s in range(self.n_S):
-                v[l][s] = model.addVar(vtype="B",name=f"v_{l}_{s}")
+        ################# 2段目 #################
+        # 1段階目の結果をJSONファイルから読み込む
+        try:
+            with open(x_values_file, "r") as f:
+                x_values = json.load(f)
+                x_values = {int(k): v for k, v in x_values.items()}
+                print(f"1段階目の結果を読み込みました: {x_values}")
+        except FileNotFoundError:
+            print(f"Error: {x_values_file} が見つかりません。")
+            return
         
-        """
-        model.addCons(
-            sum(self.w[s][t] * y[l][s] * self.h_N[l][t] for s in range(self.n_S) for t in range(self.n_T) for l in range(self.n_L)) == 0
-        )
-        """
-        ##不足人数が出てはならない
-        for t in range(self.n_T):
-            model.addCons(
-                sum(v[l][s]*self.w[s][t] for l in range(self.n_L) for s in range(self.n_S)) -self.n_D[t] >=0
-            )
-        ##従業員は勤務可能シフトで勤務する
+        # 目的関数: 勤務希望の最大化
+        model = Model("2nd")
+        y = {}
+        omega_1 = 1 / (self.n_S * self.n_T * self.n_L)
+        omega_2 = 1
+
+        # 従業員割り付け変数
         for l in range(self.n_L):
+            y[l] = {}
             for s in range(self.n_S):
-                model.addCons(
-                    u_values[l][s] >= v[l][s]
-                )
-        ##勤務するシフトパターンは一つ以下でなければならない
+                y[l][s] = model.addVar(vtype="B", name=f"y_{l}_{s}")
+
+        # 制約1: シフトごとの必要人数を満たす
+        for s in range(self.n_S):
+            model.addCons(
+                sum(y[l][s] for l in range(self.n_L)) == x_values[s]
+            )
+
+        # 制約2: 従業員は1つのシフトパターンにのみ割り当てられる
         for l in range(self.n_L):
             model.addCons(
-                sum(v[l][s] for s in range(self.n_S)) <= 1
+                sum(y[l][s] for s in range(self.n_S)) <= 1
             )
+
+        # 目的関数の設定
         model.setObjective(
-            sum(sum(self.w[s][t]*v[l][s] for s in range(self.n_S)for l in range(self.n_L))-self.n_D[t] for t in range(self.n_T)) ,"minimize"
+            sum(
+                omega_1 * self.w[s][t] * y[l][s] * self.h_P[l][t]
+                - omega_2 * self.w[s][t] * y[l][s] * self.h_N[l][t]
+                for s in range(self.n_S)
+                for t in range(self.n_T)
+                for l in range(self.n_L)
+            ),
+            "maximize"
         )
 
-        start_2 = time.perf_counter()
+        # 最適化実行
+        start = time.perf_counter()
         model.optimize()
-        end_2 = time.perf_counter()
-        print('計測時間{:.2f}'.format((end_2-start_2)*1000)) 
-        self.ret[8] = (end_2-start_2)*1000
+        end = time.perf_counter()
 
+        # 結果の記録
+
+        self.ret[8] = (end - start) * 1000
         if model.getStatus() == "optimal":
             self.ret[1] = 1
             for l in range(self.n_L):
                 for s in range(self.n_S):
-                    v_values[l][s] = model.getVal(v[l][s])
-            assigned_shifts = [100] * self.n_L
-            for l in range(self.n_L):
-                for s in range(self.n_S):
-                    if v_values[l][s] == 1:
-                        assigned_shifts[l] = s
-            print(f"２階目の従業員の割り当て:{assigned_shifts}")
-            labor_positive_sum = sum((self.w[s][t] * v_values[l][s] * self.h_P[l][t]) 
-                                 for l in range(self.n_L) for s in range(self.n_S) for t in range(self.n_T))
-            want_work = sum(self.h_P[l][t] for l in range(self.n_L) for t in range(self.n_T))/(self.n_L*self.n_T)
-            self.ret[3] = labor_positive_sum /self.n_L
-            print("従業員満足度:",labor_positive_sum)
-            self.ret[6] =  sum((self.w[s][t] * v_values[l][s] * self.h_N[l][t]) 
-                               for l in range(self.n_L) for s in range(self.n_S) for t in range(self.n_T)) 
-            print("勤務不可での勤務:",self.ret[6])
-        
+                    y_values[l][s] = model.getVal(y[l][s])
+            ##超過人数の代入
+            self.ret[2] =  sum(sum(self.w[s][t]*y_values[l][s] for l in range(self.n_L) for s in range(self.n_S))- self.n_D[t] for t in range(self.n_T))
+            labor_positive_sum = sum(
+                (self.w[s][t] * y_values[l][s] * self.h_P[l][t])
+                for l in range(self.n_L)
+                for s in range(self.n_S)
+                for t in range(self.n_T)
+            )
+            self.ret[3] = labor_positive_sum / self.n_L
+            self.ret[6] = sum(
+                (self.w[s][t] * y_values[l][s] * self.h_N[l][t])
+                for l in range(self.n_L)
+                for s in range(self.n_S)
+                for t in range(self.n_T)
+            )
         else:
             print("Problem2 could not be solved to optimality")
             self.ret[1] = 0
 
-
-        
-
-        ##超過人数の代入
-        self.ret[2] =  sum(sum(self.w[s][t]*v_values[l][s] for s in range(self.n_S) for l in range(self.n_L))-self.n_D[t] for t in range(self.n_T))        
-
-        # 問題の解決
-
-        assigned_shifts = []
-        for l in range(self.n_L):
-            unallocated=True
-            for s in range(self.n_S):
-                if v_values[l][s] == 1 :
-                    assigned_shifts.append(s+1)
-                    unallocated=False
-                    break
-            if unallocated:
-                assigned_shifts.append(-1)
-        self.ret.append(assigned_shifts)
-        #self.ret[4]=([int(value(x[v])) for v in x])
-        self.ret[5]=assigned_shifts
-        num_person_per_shift = [0]*self.n_S
-        for s in range(self.n_S):
-            for l in range(self.n_L):
-                if v_values[l][s] == 1:
-                    num_person_per_shift[s] += 1
-        self.ret[4]=([int(num_person_per_shift[s]) for s in range(self.n_S)])
-        '''
-        for s in range(self.n_S):
-            for l in range(self.n_L):
-                if v_values[l][s] == 1:
-                    print(f"v_{l}_{s}")
-        '''
+        print('計測時間{:.2f}'.format((end - start) * 1000))

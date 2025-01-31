@@ -477,11 +477,11 @@ def create_new_problem(index):
     # パラメータ設定
     time_slots = 12
     #num_employees = np.random.randint(15, 20)
-    num_employees = 46
+    num_employees = 22
     num_shift_pattern = np.random.randint(6, 10)
 
     # 連続シフトパターン、希望勤務時間帯、勤務不可時間帯の生成
-    shift_patterns = generate_shift_pattern_3(time_slots,num_shift_pattern)
+    shift_patterns = generate_shift_pattern_4(time_slots,num_shift_pattern)
     shift_preferences = [generate_prefere_timezone_2(num_employees,i,time_slots) for i in range(num_employees)]
     unavailable_slots = [generate_unavailable_timezone_2(num_employees,shift_preferences[i],time_slots,i) for i in range(num_employees)]
     required_employees_per_time_slot = generate_required_employees_3(time_slots)

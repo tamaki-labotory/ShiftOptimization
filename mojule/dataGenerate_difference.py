@@ -230,7 +230,7 @@ def process_files(directory, num_iterations):
         # 指定された回数だけ問題データを生成
         for iteration in range(num_iterations):
             problem_index =  iteration
-            create_difference_problem_3(problem_index, shift_patterns, preferences, unavailable_slots, required_employees,1)
+            create_difference_problem_3(problem_index, shift_patterns, preferences, unavailable_slots, required_employees,5)
 
 
 # メイン処理

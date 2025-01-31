@@ -30,9 +30,9 @@ def multiple_problem(printLog):
     # 各スケジューラーの結果を記録する変数
     cnt1_f = cnt1_s = cnt1_total = 0
     cnt2_f = cnt2_s = cnt2_total = 0
-    cnt3_s = cnt3_total = 0
-    cnt4_s = cnt4_total = 0
-    cnt5_s = cnt5_total = 0
+    cnt3_f =cnt3_s = cnt3_total = 0
+    cnt4_f =cnt4_s = cnt4_total = 0
+    cnt5_f =cnt5_s = cnt5_total = 0
     over_labors = [[], [], [], [], []]
     negative_labors = [[], [], [], [], []]
     fulfill_preferences = [[], [], [], [], []]
@@ -101,8 +101,11 @@ def multiple_problem(printLog):
 
         # スケジューラー6の結果
         ret.append(ShiftScheduler6.ret)
+        if ret[-1][0] == 1:
+            cnt3_f += 1
         if ret[-1][1] == 1:
             cnt3_s += 1
+        if ret[-1][0] == 1 and ret[-1][1] == 1:
             cnt3_total += 1
         else:
             append_flag = False
@@ -112,8 +115,11 @@ def multiple_problem(printLog):
 
         # スケジューラー7の結果
         ret.append(ShiftScheduler7.ret)
+        if ret[-1][0] == 1:
+            cnt4_f += 1
         if ret[-1][1] == 1:
             cnt4_s += 1
+        if ret[-1][0] == 1 and ret[-1][1] == 1:
             cnt4_total += 1
         else:
             append_flag = False
@@ -123,8 +129,11 @@ def multiple_problem(printLog):
 
         # スケジューラー8の結果
         ret.append(ShiftScheduler8.ret)
+        if ret[-1][0] == 1:
+            cnt5_f += 1
         if ret[-1][1] == 1:
             cnt5_s += 1
+        if ret[-1][0] == 1 and ret[-1][1] == 1:
             cnt5_total += 1
         else:
             append_flag = False
@@ -133,6 +142,7 @@ def multiple_problem(printLog):
             print("~~~~~~~~~~~~~~~~~~~~~~")
 
         # 成功した場合のみ結果を記録
+        '''
         if append_flag:
             for i in range(5):
                 over_labors[i].append(ret[i][2])
@@ -140,10 +150,29 @@ def multiple_problem(printLog):
                 negative_labors[i].append(ret[i][6])
                 time_1[i].append(ret[i][7])
                 time_2[i].append(ret[i][8])
+        '''
+        '''
+        #いかなる場合も結果を記録
+        for i in range(5):
+                over_labors[i].append(ret[i][2])
+                fulfill_preferences[i].append(ret[i][3])
+                negative_labors[i].append(ret[i][6])
+                time_1[i].append(ret[i][7])
+                time_2[i].append(ret[i][8])
+        '''
+        # 成功した場合のみ結果を記録
+        for i in range(5):
+            if ret[i][0] == 1 and ret[i][1] == 1:  # 条件を満たす場合のみ
+                over_labors[i].append(ret[i][2])
+                fulfill_preferences[i].append(ret[i][3])
+                negative_labors[i].append(ret[i][6])
+                time_1[i].append(ret[i][7])
+                time_2[i].append(ret[i][8])
+        
 
     # 平均値を計算する
     def calculate_average(data_list):
-        return np.mean(data_list) if data_list else 0
+        return np.mean(data_list) if data_list else None
 
     # 各リストの平均値を計算
     over_labors_avg = [calculate_average(over_labors[i]) for i in range(5)]
@@ -170,8 +199,8 @@ def multiple_problem(printLog):
         print(f"Time for 2nd Stage Average: {time_2_avg[i]}")
     # エクセルファイルへの書き込み
     excel_path = "/Users/hymac/Desktop/学校/0128.xlsx"
-    sheet_number = 1  # 手動で指定するシート番号
-    problem_number = 1  # 手動で指定する問題番号
+    sheet_number = 11  # 手動で指定するシート番号
+    problem_number =12  # 手動で指定する問題番号
 
     # エクセルファイルを読み込み
     wb = openpyxl.load_workbook(excel_path)
@@ -182,7 +211,7 @@ def multiple_problem(printLog):
     sheet = wb[sheet_name]
 
     # データ書き込み
-    base_row = 2  # 問題番号に基づく行の基準
+    base_row = 3  # 問題番号に基づく行の基準
     sheet[f"B{base_row}"] = cnt1_total  # 実行可能解数
     sheet[f"B{base_row + 1}"] = negative_labors_avg[0]
     sheet[f"B{base_row + 2}"] = over_labors_avg[0]
@@ -231,12 +260,12 @@ def single_problem(file_paths, printLog):
     ShiftScheduler4.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
 
-    ShiftScheduler5 = shift_scheduler6.ShiftScheduler6(file_paths, printLog)
+    ShiftScheduler5 = shift_scheduler5.ShiftScheduler5(file_paths, printLog)
     ShiftScheduler5.solve()
     ShiftScheduler5.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
 
-    ShiftScheduler6 = shift_scheduler7.ShiftScheduler7(file_paths, printLog)
+    ShiftScheduler6 = shift_scheduler6.ShiftScheduler6(file_paths, printLog)
     ShiftScheduler6.solve()
     ShiftScheduler6.print_results()
 
