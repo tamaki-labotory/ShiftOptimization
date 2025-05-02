@@ -1,0 +1,13 @@
+days: 30
+slots: 24
+subjects:
+  A:
+    end: 17
+    start: 9
+    type: day
+  B:
+    end: 5
+    start: 20
+    type: night
+  C:
+    type: shift_weekend
