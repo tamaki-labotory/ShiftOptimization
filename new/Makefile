@@ -1,26 +1,38 @@
 # ─────────────────────────────────────────────
-# Makefile for CWT analysis workflow
+# Makefile for dynamic CWT analysis workflow
 # ─────────────────────────────────────────────
 
-.PHONY: all define_problem plot_all plot_AC clean
+.PHONY: all define_problem plot_all plot_power plot_phase plot_integrated clean
 
-# デフォルト実行ターゲット
-all: plot_all
+# Default target: full power scalogram for all subjects
+all: plot_power
 
-# 1) 問題定義ファイルの生成
+# Generate config file
 my_problem.yaml:
 	python define.py -o $@
 
 define_problem: my_problem.yaml
 
-# 2) 全被検者 (A, B, C) の解析プロット
+# Plot all subjects power scalogram
 plot_all: define_problem
-	python cwt.py my_problem.yaml
+	python cwt.py my_problem.yaml --mode power
 
-# 3) 被検者 A と C のみ解析、色上限を 90% に
+# Plot power scalogram (default)
+power: define_problem
+	python cwt.py my_problem.yaml --mode power
+
+# Plot phase
+phase: define_problem
+	python cwt.py my_problem.yaml --mode phase
+
+# Plot integrated power
+integrated: define_problem
+	python cwt.py my_problem.yaml --mode integrated
+
+# Customized subjects example (A and C only, 90% clip)
 plot_AC: define_problem
-	python cwt.py my_problem.yaml --subjects A C --clip-quantile 0.90
+	python cwt.py my_problem.yaml --subjects A C --clip-quantile 0.90 --mode power
 
-# 不要ファイルの削除
+# Clean up
 clean:
 	rm -f my_problem.yaml
