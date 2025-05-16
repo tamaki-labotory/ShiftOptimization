@@ -2,37 +2,35 @@
 # Makefile for dynamic CWT analysis workflow
 # ─────────────────────────────────────────────
 
-.PHONY: all define_problem plot_all plot_power plot_phase plot_integrated clean
+.PHONY: all define_problem plot_all plot_power plot_phase plot_integrated 
 
 # Default target: full power scalogram for all subjects
-all: plot_power
+all: power
 
 # Generate config file
-my_problem.yaml:
+exam2.yaml:
 	python define.py -o $@
 
-define_problem: my_problem.yaml
+define_problem: exam2.yaml
 
-# Plot all subjects power scalogram
-plot_all: define_problem
-	python cwt.py my_problem.yaml --mode power
+
 
 # Plot power scalogram (default)
 power: define_problem
-	python cwt.py my_problem.yaml --mode power
+	python cwt.py exam2.yaml --mode power
 
 # Plot phase
 phase: define_problem
-	python cwt.py my_problem.yaml --mode phase
+	python cwt.py exam2.yaml --mode phase
 
 # Plot integrated power
 integrated: define_problem
-	python cwt.py my_problem.yaml --mode integrated
+	python cwt.py exam2.yaml --mode integrated
 
-# Customized subjects example (A and C only, 90% clip)
 plot_AC: define_problem
-	python cwt.py my_problem.yaml --subjects A C --clip-quantile 0.90 --mode power
+	python cwt.py exam2.yaml --subjects A C --clip-quantile 0.90 --mode power
 
-# Clean up
-clean:
-	rm -f my_problem.yaml
+
+# Plot situation
+showData: define_problem
+	python showData.py exam2.yaml

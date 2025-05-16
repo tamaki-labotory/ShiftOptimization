@@ -1,0 +1,15 @@
+days: 30
+slots: 24
+subjects:
+  A:                # 9–17の固定日勤
+    type: day
+    start: 9
+    end: 17
+
+  B:              # 20–5の固定夜勤
+    type: night
+    start: 20
+    end: 5
+
+  C:
+    type: shift_weekend

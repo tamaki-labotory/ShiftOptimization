@@ -55,7 +55,7 @@ def plot_cwt(signals, days, slots, clip_quantile, levels):
     plt.show()
 
 #### CWTの位相をプロットする関数 ####
-def plot_cwt_phase(signals, days, slots, _clip_quantile, _levels):
+def plot_cwt_phase(signals, days, slots):
     total = days * slots
     t = np.arange(total)
     dt = 24 / slots
@@ -93,11 +93,11 @@ def plot_cwt_phase(signals, days, slots, _clip_quantile, _levels):
     plt.show()
 
 #### CWTの積分値をプロットする関数 ####
-def plot_cwt_integrated(signals, days, slots, _clip_quantile, _levels):
+def plot_cwt_integrated(signals, days, slots):
     total = days * slots
     t = np.arange(total)
     dt = 24 / slots
-    scales = np.arange(1, 1000)
+    scales = np.arange(1, 250)
     cf = pywt.central_frequency('morl')
     periods = scales * dt / cf
 
@@ -152,11 +152,11 @@ def main():
     if args.mode == 'power':
         plot_cwt(signals, days, slots, args.clip_quantile, args.levels)
     elif args.mode == 'phase':
-        plot_cwt_phase(signals, days, slots, args.clip_quantile, args.levels)
+        plot_cwt_phase(signals, days, slots)
     elif args.mode == 'integrated':
-        plot_cwt_integrated(signals, days, slots, args.clip_quantile, args.levels)
+        plot_cwt_integrated(signals, days, slots)
     else:
-        plot_cwt_integrated(signals, days, slots, args.clip_quantile, args.levels)
+        print(f"Unknown mode: {args.mode}")
 
 if __name__ == '__main__':
     main()
