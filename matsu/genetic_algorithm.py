@@ -7,8 +7,8 @@ from heapq import nlargest
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
-from genetic_algorithm_module import Chromosome
-from genetic_algorithm_module import GeneticAlgorithm
+from program.matsu.genetic_algorithm_module import Chromosome
+from program.matsu.genetic_algorithm_module import GeneticAlgorithm
 import numpy as np
 
 M:int=1001001001
@@ -60,7 +60,7 @@ class Problem(Chromosome):
             for t in range(self.n_T):
                 ret+=self.w[self.x[l]][t]*(self.h_P[l][t] - self.h_N[l][t]*M)
 
-        return ret/70
+        return ret
     
     def get_fitness2(self) -> float:
         """
@@ -81,7 +81,7 @@ class Problem(Chromosome):
         #不足人数に対し、超過人数より割増しで低い評価をつける
         ret=[ret[t]+np.exp(-ret[t]*1000) for t in range(self.n_T)]
 
-        return -sum(ret)/50
+        return -sum(ret)
 
     @classmethod
     def make_random_instance(cls,file_path:str) -> Problem:
@@ -176,7 +176,7 @@ class Problem(Chromosome):
                   
         fitness: List[float] = [self.get_fitness1(),self.get_fitness2()]
 
-        info: str = f'シフト割り付け:{shifts}, 超過人数:{over_labors}, 不足人数:{under_labors}, 従業員満足度:{fitness[0]*70/self.n_L}, fitness:{fitness}'
+        info: str = f'シフト割り付け:{shifts}, 超過人数:{over_labors}, 不足人数:{under_labors}, 従業員満足度:{fitness[0]/self.n_L}, fitness:{fitness}'
         return info
     
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         initial_population1=instances1,
         initial_population2=instances2,
         threshold=100,
-        max_generations=3000,
+        max_generations=5000,
         mutation_probability=0.5,
         crossover_probability=0.5,
         selection_type=GeneticAlgorithm.SELECTION_TYPE_TOURNAMENT)
@@ -211,3 +211,5 @@ if __name__ == '__main__':
 # 各シフトパターンの割り当て人数:[0, 0, 3, 6, 0, 0, 3, 0, 0]
 # ２階目の従業員の割り当て:[-1, 3, 4, 4, 7, 7, 4, 3, 4, 4, 7, 3, -1, 4, -1, -1]
 # 従業員満足度: 2.9375
+    
+# パレート解:シフト割り付け:[-1, 3, 1, 7, 7, 7, 7, 3, 4, 4, 7, 4, -1, 4, 8, -1], 超過人数:31, 不足人数:0, 従業員満足度:3.3125, fitness:[53, -33.0]

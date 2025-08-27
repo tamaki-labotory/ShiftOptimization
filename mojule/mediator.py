@@ -1,8 +1,11 @@
-from matsu import solve_program1
-from matsu import solve_program2
-from matsu import solve_program3
-from matsu import solve_program4
-from matsu import solve_program5
+import sys
+import os
+# プロジェクトのルートディレクトリをsys.pathに追加
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from matsu import shift_scheduler1
+from matsu import shift_scheduler2
+from matsu import shift_scheduler3
 import numpy as np
 import graph
 import glob
@@ -15,15 +18,23 @@ def multiple_problem(printLog):
     cnt1_total=cnt2_total=cnt3_total=0
     over_labors=[[],[],[]]
     fulfill_preferences=[[],[],[]]
-    files = glob.glob("/Users/matsumura/Desktop/修論/solver/json/*.json")
+    files = glob.glob("/Users/matsumura/Desktop/修論/program/json/*.json")
+
     for file in files:
         ret=[]
+        ShiftScheduler1=shift_scheduler1.ShiftScheduler1(file,printLog)
+        ShiftScheduler2=shift_scheduler2.ShiftScheduler2(file,printLog)
+        ShiftScheduler3=shift_scheduler3.ShiftScheduler3(file,printLog)
+        ShiftScheduler1.solve()
+        ShiftScheduler2.solve()
+        ShiftScheduler3.solve()
         
         # 最適化プログラム実行
         append_flag=True
         if printLog:
             print(f"\n~~~~Results of Problem{file[50:-5]}~~~~")
-        ret.append(solve_program4.solve(file,printLog))
+    
+        ret.append(ShiftScheduler1.ret)
         if ret[-1][0]==1:
             cnt1_f+=1
         if ret[-1][1]==1:
@@ -34,9 +45,11 @@ def multiple_problem(printLog):
             append_flag=False
 
         if printLog:
+            ShiftScheduler1.print_results()
             print("~~~~~~~~~~~~~~~~~~~~~~")
+
         #2個目のプログラム結果
-        ret.append(solve_program5.solve(file,printLog))
+        ret.append(ShiftScheduler2.ret)
         if ret[-1][1]==1:
             cnt2_s+=1
             cnt2_total+=1
@@ -44,9 +57,11 @@ def multiple_problem(printLog):
             append_flag=False
 
         if printLog:
+            ShiftScheduler2.print_results()
             print("~~~~~~~~~~~~~~~~~~~~~~")
+
         #3個目のプログラム結果
-        ret.append(solve_program3.solve(file,printLog))
+        ret.append(ShiftScheduler3.ret)
         if ret[-1][0]==1:
             cnt3_f+=1
         if ret[-1][1]==1:
@@ -55,6 +70,9 @@ def multiple_problem(printLog):
             cnt3_total+=1
         else :
             append_flag=False
+
+        if printLog:
+            ShiftScheduler3.print_results()
 
         if append_flag is True:
             for i in range(3):
@@ -81,15 +99,22 @@ def multiple_problem(printLog):
 
 
 def single_problem(file_path,printLog):
-    solve_program1.solve(file_path,printLog)
+    ShiftScheduler1=shift_scheduler1.ShiftScheduler1(file_path,printLog)
+    ShiftScheduler1.solve()
+    ShiftScheduler1.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
-    solve_program2.solve(file_path,printLog)
+    ShiftScheduler2=shift_scheduler2.ShiftScheduler2(file_path,printLog)
+    ShiftScheduler2.solve()
+    ShiftScheduler2.print_results()
     print("~~~~~~~~~~~~~~~~~~~~~~")
-    solve_program3.solve(file_path,printLog)
+    ShiftScheduler3=shift_scheduler3.ShiftScheduler3(file_path,printLog)
+    ShiftScheduler3.solve()
+    ShiftScheduler3.print_results()
 
     #　条件可視化
     sdv=graph.ShiftDataVisualizer(file_path)
-    sdv.show_graph()
+    # sdv.show_graph()
+    sdv.show_assingn_state(ShiftScheduler3.ret[4])
     
 
 def mediator(s_or_m,file_path,printLog):

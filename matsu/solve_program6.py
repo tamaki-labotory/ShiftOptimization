@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.append("/Users/matsumura/Desktop/修論/solver") 
-import graph
+import program.mojule.graph as graph
 from matplotlib.colors import ListedColormap, BoundaryNorm
 from pulp import LpVariable, lpSum, value, LpProblem, LpMinimize,LpMaximize, PULP_CBC_CMD,LpStatusOptimal
 

@@ -1,0 +1,62 @@
+days: 30
+slots: 24
+subjects:
+  A:                # 9–17の固定日勤（休憩1時間含む）
+    type: day
+    start: 9
+    end: 17
+    break_start: 12
+    break_end: 13
+
+  B:              # 20–5の固定夜勤（休憩1時間含む）
+    type: night
+    start: 20
+    end: 5
+    break_start: 1
+    break_end: 2
+
+  C:                # シフト制（早番・遅番・夜勤のローテーション、休憩あり）
+    type: shift_rotation
+    shifts:
+      - name: early
+        start: 8
+        end: 17
+        break_start: 12
+        break_end: 13
+      - name: late
+        start: 13
+        end: 22
+        break_start: 17
+        break_end: 18
+      - name: night
+        start: 22
+        end: 7
+        break_start: 2
+        break_end: 3
+    rotation: [early, late, night] # ローテーション順序（例）
+
+  D:                # 変形労働時間制（週によって勤務時間帯が変動、休憩あり）
+    type: flexible
+    schedule: # 各曜日の勤務時間（例）
+      0: { start: 9, end: 18, break_start: 12, break_end: 13 } # 月曜日
+      1: { start: 10, end: 19, break_start: 13, break_end: 14 } # 火曜日
+      2: { start: 9, end: 17, break_start: 12, break_end: 13 }  # 水曜日
+      3: { start: 11, end: 20, break_start: 14, break_end: 15 } # 木曜日
+      4: { start: 9, end: 17, break_start: 12, break_end: 13 }  # 金曜日
+      5: { start: -1, end: -1 }                               # 土曜日（休み）
+      6: { start: -1, end: -1 }                               # 日曜日（休み）
+
+  E:                # 短時間勤務（午前のみ）
+    type: short_time
+    start: 9
+    end: 13
+
+  F:                # 隔日勤務（24時間拘束、休憩複数回）
+    type: every_other_day
+    on_duty:
+      start: 9
+      end: 9 # 翌日の9時
+      breaks:
+        - { start: 12, end: 13 } # 昼休憩
+        - { start: 18, end: 19 } # 夕休憩
+        - { start: 1, end: 3 }   # 深夜休憩
